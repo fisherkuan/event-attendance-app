@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Event Attendance App</title>
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="container">
+        <header class="app-header">
+            <h1>Event Attendance App</h1>
+            <p>View upcoming events and RSVP to let hosts know you're coming!</p>
+        </header>
+
+        <main>
+            <!-- Google Calendar Integration Section -->
+            <section class="calendar-section">
+                <h2>Upcoming Events</h2>
+                <div id="calendar-container">
+                    <!-- Google Calendar iframe will be inserted here -->
+                    <div id="calendar-placeholder">
+                        <p>Google Calendar will be displayed here. Please provide the calendar link to complete the integration.</p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Events List Section -->
+            <section class="events-section">
+                <h2>Available Events for RSVP</h2>
+                <div id="events-list">
+                    <!-- Events will be populated dynamically -->
+                    <div class="loading">Loading events...</div>
+                </div>
+            </section>
+
+            <!-- RSVP Modal -->
+            <div id="rsvp-modal" class="modal hidden">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h3>RSVP for Event</h3>
+                        <button class="close-btn" onclick="closeRsvpModal()">&times;</button>
+                    </div>
+                    <div class="modal-body">
+                        <div id="event-details">
+                            <h4 id="modal-event-title">Event Title</h4>
+                            <p id="modal-event-date">Event Date</p>
+                            <p id="modal-event-description">Event Description</p>
+                        </div>
+                        
+                        <form id="rsvp-form">
+                            <input type="hidden" id="event-id" name="eventId">
+                            
+                            <div class="form-group">
+                                <label for="attendance">Will you attend?</label>
+                                <select id="attendance" name="attendance" required>
+                                    <option value="">Please select...</option>
+                                    <option value="yes">Yes, I'll attend</option>
+                                    <option value="no">No, I can't attend</option>
+                                    <option value="maybe">Maybe</option>
+                                </select>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="attendee-name">Your Name (optional)</label>
+                                <input type="text" id="attendee-name" name="attendeeName" placeholder="Enter your name or leave blank to stay anonymous">
+                            </div>
+
+                            <div class="form-group">
+                                <input type="checkbox" id="anonymous" name="anonymous">
+                                <label for="anonymous">RSVP anonymously</label>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="comments">Additional Comments (optional)</label>
+                                <textarea id="comments" name="comments" rows="3" placeholder="Any additional comments or special requirements"></textarea>
+                            </div>
+
+                            <div class="form-actions">
+                                <button type="button" onclick="closeRsvpModal()">Cancel</button>
+                                <button type="submit">Submit RSVP</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Attendance Summary Section -->
+            <section class="attendance-section">
+                <h2>Event Attendance Summary</h2>
+                <div id="attendance-summary">
+                    <!-- Attendance data will be populated here -->
+                </div>
+            </section>
+        </main>
+
+        <!-- Facebook SSO Integration Placeholder -->
+        <div id="facebook-sso" class="hidden">
+            <h3>Sign in with Facebook</h3>
+            <p>Facebook SSO integration will be implemented here in the future.</p>
+            <button id="facebook-login-btn" class="facebook-btn">Connect with Facebook</button>
+        </div>
+
+        <footer>
+            <p>&copy; 2024 Event Attendance App. Built for better event planning.</p>
+        </footer>
+    </div>
+
+    <!-- Scripts -->
+    <script src="app.js"></script>
+</body>
+</html>
