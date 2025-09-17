@@ -149,7 +149,7 @@ event-attendance-app/
   eventId: string,
   attendance: "yes"|"no"|"maybe",
   attendeeName: string,
-  isAnonymous: boolean,
+  
   comments: string,
   timestamp: ISO string
 }

@@ -35,7 +35,7 @@ try {
     appConfig = {
         calendar: { url: '', enabled: false },
         events: { autoFetch: false, defaultTimeRange: 'future', refreshInterval: 300000 },
-        rsvp: { allowAnonymous: true, requireName: false }
+        rsvp: { allowAnonymous: false, requireName: true }
     };
 }
 
@@ -238,40 +238,42 @@ app.get('/api/config', (req, res) => {
 app.get('/api/events', async (req, res) => {
     try {
         const timeRange = req.query.timeRange || appConfig.events.defaultTimeRange;
-        let events = readJsonFile(EVENTS_FILE);
-        const rsvps = readJsonFile(RSVPS_FILE);
-        
-        // If auto-fetch is enabled, fetch from calendar
+        let allEvents = readJsonFile(EVENTS_FILE);
+        let allRsvps = readJsonFile(RSVPS_FILE);
+
         if (appConfig.events.autoFetch) {
             const calendarEvents = await fetchCalendarEvents();
-            // Merge calendar events with existing events, avoiding duplicates
-            const existingIds = new Set(events.map(e => e.id));
-            const newCalendarEvents = calendarEvents.filter(e => !existingIds.has(e.id));
-            
-            if (newCalendarEvents.length > 0) {
-                events = [...events, ...newCalendarEvents];
-                // Save the updated events to file
-                writeJsonFile(EVENTS_FILE, events);
-            }
-        }
-        
-        // Filter by time range
-        const filteredEvents = filterEventsByTimeRange(events, timeRange);
+            const calendarEventIds = new Set(calendarEvents.map(e => e.id));
 
-        // Aggregate attendance data
+            const nonCalendarEvents = allEvents.filter(e => e.source !== 'calendar');
+
+            const staleEventIds = allEvents
+                .filter(e => e.source === 'calendar' && !calendarEventIds.has(e.id))
+                .map(e => e.id);
+
+            const finalEvents = [...nonCalendarEvents, ...calendarEvents];
+            const finalRsvps = allRsvps.filter(r => !staleEventIds.includes(r.eventId));
+
+            writeJsonFile(EVENTS_FILE, finalEvents);
+            writeJsonFile(RSVPS_FILE, finalRsvps);
+
+            allEvents = finalEvents;
+            allRsvps = finalRsvps;
+        }
+
+        const filteredEvents = filterEventsByTimeRange(allEvents, timeRange);
+
         const eventsWithAttendance = filteredEvents.map(event => {
-            const eventRsvps = rsvps.filter(rsvp => rsvp.eventId === event.id && rsvp.attendance === 'yes');
-            const attendees = eventRsvps.filter(rsvp => !rsvp.isAnonymous).map(rsvp => rsvp.attendeeName);
-            const anonymousCount = eventRsvps.filter(rsvp => rsvp.isAnonymous).length;
-            
+            const eventRsvps = allRsvps.filter(rsvp => rsvp.eventId === event.id && rsvp.attendance === 'yes');
+            const attendees = eventRsvps.map(rsvp => rsvp.attendeeName);
+
             return {
                 ...event,
                 attendees,
-                anonymousCount,
                 attendingCount: eventRsvps.length
             };
         });
-        
+
         res.json(eventsWithAttendance);
     } catch (error) {
         console.error('Error fetching events:', error);
@@ -330,19 +332,24 @@ app.post('/api/rsvp', (req, res) => {
         const rsvps = readJsonFile(RSVPS_FILE);
         
         if (action === 'add') {
+            if (!attendeeName) {
+                return res.status(400).json({ 
+                    success: false, 
+                    message: 'Attendee name is required' 
+                });
+            }
             // Add new RSVP
             const newRsvp = {
                 id: uuidv4(),
                 eventId,
                 attendance: 'yes', // Always "attending" when adding
-                attendeeName: attendeeName || 'Anonymous',
-                isAnonymous: !attendeeName,
+                attendeeName: attendeeName,
                 timestamp: new Date().toISOString()
             };
             
             rsvps.push(newRsvp);
         } else if (action === 'remove') {
-            // Remove RSVP - if name provided, remove specific person, otherwise remove anonymous count
+            // Remove RSVP - if name provided, remove specific person
             if (attendeeName) {
                 // Remove specific person by name
                 const index = rsvps.findIndex(rsvp => 
@@ -354,15 +361,10 @@ app.post('/api/rsvp', (req, res) => {
                     rsvps.splice(index, 1);
                 }
             } else {
-                // Remove one anonymous attendance
-                const anonymousIndex = rsvps.findIndex(rsvp => 
-                    rsvp.eventId === eventId && 
-                    rsvp.attendeeName === 'Anonymous' && 
-                    rsvp.attendance === 'yes'
-                );
-                if (anonymousIndex !== -1) {
-                    rsvps.splice(anonymousIndex, 1);
-                }
+                return res.status(400).json({ 
+                    success: false, 
+                    message: 'Attendee name is required to remove an RSVP' 
+                });
             }
         }
         

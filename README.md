@@ -7,7 +7,7 @@ A modern web application for managing event RSVPs with Google Calendar integrati
 ### Core Features
 - 📅 **Google Calendar Integration** - Embed public Google Calendar to display events
 - 📝 **RSVP Management** - Allow users to RSVP with attendance status (Yes/No/Maybe)
-- 👤 **Anonymous RSVPs** - Users can RSVP anonymously or provide their name
+
 - 📊 **Attendance Dashboard** - Real-time attendance summary for event hosts
 - 💬 **Comments Support** - Optional comments field for special requirements
 - 📱 **Responsive Design** - Works seamlessly on desktop, tablet, and mobile
@@ -16,7 +16,7 @@ A modern web application for managing event RSVPs with Google Calendar integrati
 - 🔐 **Facebook SSO Integration** - Sign in with Facebook (implementation ready)
 - 🎨 **Modern UI/UX** - Clean, professional interface with smooth animations
 - 💾 **File-based Storage** - No database required for quick setup
-- 🔒 **Privacy Focused** - Anonymous RSVP options respect user privacy
+
 
 ## Technology Stack
 
@@ -148,7 +148,7 @@ The app comes with sample events pre-loaded. These will be replaced when you int
 1. **View events**: Browse upcoming events in the calendar and event list
 2. **RSVP to events**: Click the RSVP button on any event
 3. **Choose your response**: Select Yes, No, or Maybe
-4. **Add your details**: Optionally provide your name or stay anonymous
+4. **Add your details**: Provide your name
 5. **Add comments**: Include any special requirements or notes
 
 ## Deployment
@@ -201,7 +201,7 @@ Data is automatically created and managed by the application. For production use
 
 - Input validation on all user inputs
 - CORS protection
-- Anonymous RSVP support for privacy
+
 - Environment variable protection for sensitive data
 - SQL injection protection (when using databases)
 

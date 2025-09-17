@@ -48,7 +48,7 @@ async function loadConfig() {
         appConfig = {
             calendar: { url: '', enabled: false },
             events: { autoFetch: false, defaultTimeRange: 'future' },
-            rsvp: { allowAnonymous: true, requireName: false }
+            rsvp: { requireName: true }
         };
     }
 }
@@ -118,12 +118,7 @@ function displayEvents() {
         if (event.attendees && event.attendees.length > 0) {
             attendanceInfo = event.attendees.join(', ');
         }
-        if (event.anonymousCount > 0) {
-            if (attendanceInfo) {
-                attendanceInfo += ', ';
-            }
-            attendanceInfo += `${event.anonymousCount} anonymous attendee(s)`;
-        }
+        
 
         // Show different buttons based on whether it's a past or future event
         const rsvpButtons = isPastEvent 
@@ -212,12 +207,7 @@ function openRemoveRsvpModal(eventId) {
         attendeeSelector.appendChild(option);
     });
 
-    if (event.anonymousCount > 0) {
-        const option = document.createElement('option');
-        option.value = 'Anonymous';
-        option.textContent = `Anonymous (${event.anonymousCount} available to remove)`;
-        attendeeSelector.appendChild(option);
-    }
+    
 
     document.getElementById('remove-rsvp-modal').classList.remove('hidden');
 }
@@ -306,10 +296,14 @@ function submitRsvp(action) {
     }
     
     const attendeeName = document.getElementById('attendee-name').value.trim();
+    if (!attendeeName) {
+        alert('Please enter your name.');
+        return;
+    }
     const rsvpData = {
         eventId: currentEventForRsvp.id,
         action: action,
-        attendeeName: attendeeName || undefined
+        attendeeName: attendeeName
     };
     
     // Submit RSVP to server

@@ -9,7 +9,7 @@
     "refreshInterval": 300000
   },
   "rsvp": {
-    "allowAnonymous": true,
-    "requireName": false
+    "allowAnonymous": false,
+    "requireName": true
   }
 }
