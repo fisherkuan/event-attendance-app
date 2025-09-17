@@ -175,13 +175,7 @@ Key considerations for production:
 
 ## Future Enhancements
 
-### Facebook SSO Integration
 
-Complete setup guide available in `config/facebook-sso.md`. Features include:
-- Social login for users
-- Auto-populated names from Facebook profiles
-- Event sharing to Facebook
-- Friend invitations
 
 ### Potential Additions
 

@@ -17,18 +17,26 @@
         <main>
             <!-- Google Calendar Integration Section -->
             <section class="calendar-section">
-                <h2>Upcoming Events</h2>
+                <h2>Calendar</h2>
                 <div id="calendar-container">
                     <!-- Google Calendar iframe will be inserted here -->
                     <div id="calendar-placeholder">
-                        <p>Google Calendar will be displayed here. Please provide the calendar link to complete the integration.</p>
+                        <p>Loading calendar...</p>
                     </div>
                 </div>
             </section>
 
             <!-- Events List Section -->
             <section class="events-section">
-                <h2>Available Events for RSVP</h2>
+                <h2>Events</h2>
+                <div class="time-range-selector">
+                    <label for="time-range">Show events:</label>
+                    <select id="time-range" onchange="loadEvents()">
+                        <option value="future">Future Events</option>
+                        <option value="past">Past Events</option>
+                        <option value="all">All Events</option>
+                    </select>
+                </div>
                 <div id="events-list">
                     <!-- Events will be populated dynamically -->
                     <div class="loading">Loading events...</div>
@@ -49,61 +57,66 @@
                             <p id="modal-event-description">Event Description</p>
                         </div>
                         
-                        <form id="rsvp-form">
-                            <input type="hidden" id="event-id" name="eventId">
+                        <div class="rsvp-actions">
+                            <div class="form-group">
+                                <label for="attendee-name">Your Name</label>
+                                <input type="text" id="attendee-name" placeholder="Enter your name or leave blank to stay anonymous">
+                            </div>
                             
-                            <div class="form-group">
-                                <label for="attendance">Will you attend?</label>
-                                <select id="attendance" name="attendance" required>
-                                    <option value="">Please select...</option>
-                                    <option value="yes">Yes, I'll attend</option>
-                                    <option value="no">No, I can't attend</option>
-                                    <option value="maybe">Maybe</option>
-                                </select>
+                            <div class="rsvp-buttons">
+                                <button class="rsvp-add-btn" onclick="submitRsvp('add')">
+                                    <span class="text">Confirm</span>
+                                </button>
                             </div>
-
-                            <div class="form-group">
-                                <label for="attendee-name">Your Name (optional)</label>
-                                <input type="text" id="attendee-name" name="attendeeName" placeholder="Enter your name or leave blank to stay anonymous">
-                            </div>
-
-                            <div class="form-group">
-                                <input type="checkbox" id="anonymous" name="anonymous">
-                                <label for="anonymous">RSVP anonymously</label>
-                            </div>
-
-                            <div class="form-group">
-                                <label for="comments">Additional Comments (optional)</label>
-                                <textarea id="comments" name="comments" rows="3" placeholder="Any additional comments or special requirements"></textarea>
-                            </div>
-
+                            
                             <div class="form-actions">
                                 <button type="button" onclick="closeRsvpModal()">Cancel</button>
-                                <button type="submit">Submit RSVP</button>
                             </div>
-                        </form>
+                        </div>
                     </div>
                 </div>
             </div>
 
-            <!-- Attendance Summary Section -->
-            <section class="attendance-section">
-                <h2>Event Attendance Summary</h2>
-                <div id="attendance-summary">
-                    <!-- Attendance data will be populated here -->
+            <!-- Remove RSVP Modal -->
+            <div id="remove-rsvp-modal" class="modal hidden">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h3>Remove RSVP</h3>
+                        <button class="close-btn" onclick="closeRemoveRsvpModal()">&times;</button>
+                    </div>
+                    <div class="modal-body">
+                        <div id="event-details">
+                            <h4 id="remove-modal-event-title">Event Title</h4>
+                            <p id="remove-modal-event-date">Event Date</p>
+                        </div>
+                        
+                        <div class="rsvp-actions">
+                            <div class="form-group">
+                                <label for="attendee-to-remove">Select Attendee to Remove</label>
+                                <select id="attendee-to-remove"></select>
+                            </div>
+                            
+                            <div class="rsvp-buttons">
+                                <button class="rsvp-remove-btn" onclick="submitRemoveRsvp()">
+                                    <span class="text">Confirm</span>
+                                </button>
+                            </div>
+                            
+                            <div class="form-actions">
+                                <button type="button" onclick="closeRemoveRsvpModal()">Cancel</button>
+                            </div>
+                        </div>
+                    </div>
                 </div>
-            </section>
+            </div>
+
+            
         </main>
 
-        <!-- Facebook SSO Integration Placeholder -->
-        <div id="facebook-sso" class="hidden">
-            <h3>Sign in with Facebook</h3>
-            <p>Facebook SSO integration will be implemented here in the future.</p>
-            <button id="facebook-login-btn" class="facebook-btn">Connect with Facebook</button>
-        </div>
+        
 
         <footer>
-            <p>&copy; 2024 Event Attendance App. Built for better event planning.</p>
+            <p>&copy; 2025 Event Attendance App. Built for Taiwanese Leuven SportsCenter.</p>
         </footer>
     </div>
 

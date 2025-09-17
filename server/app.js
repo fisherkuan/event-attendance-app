@@ -21,8 +21,23 @@ app.use(express.static(path.join(__dirname, '../public')));
 
 // Data storage paths
 const DATA_DIR = path.join(__dirname, '../data');
+const CONFIG_DIR = path.join(__dirname, '../config');
 const EVENTS_FILE = path.join(DATA_DIR, 'events.json');
 const RSVPS_FILE = path.join(DATA_DIR, 'rsvps.json');
+const CONFIG_FILE = path.join(CONFIG_DIR, 'app.json');
+
+// Load configuration
+let appConfig = {};
+try {
+    appConfig = JSON.parse(fs.readFileSync(CONFIG_FILE, 'utf8'));
+} catch (error) {
+    console.error('Error loading config file:', error);
+    appConfig = {
+        calendar: { url: '', enabled: false },
+        events: { autoFetch: false, defaultTimeRange: 'future', refreshInterval: 300000 },
+        rsvp: { allowAnonymous: true, requireName: false }
+    };
+}
 
 // Ensure data directory exists
 if (!fs.existsSync(DATA_DIR)) {
@@ -84,13 +99,180 @@ function writeJsonFile(filePath, data) {
     }
 }
 
+// Function to fetch events from Google Calendar
+async function fetchCalendarEvents() {
+    if (!appConfig.calendar.enabled || !appConfig.calendar.url) {
+        return [];
+    }
+
+    try {
+        // Extract calendar ID from the URL
+        let calendarId = null;
+        const calendarUrl = appConfig.calendar.url;
+        
+        if (calendarUrl.includes('src=')) {
+            // Typical embed URL: ...src=calendarId...
+            const match = calendarUrl.match(/src=([^&]+)/);
+            if (match) calendarId = decodeURIComponent(match[1]);
+        } else if (calendarUrl.includes('calendar.google.com/calendar/ical/')) {
+            // Direct iCal link
+            const match = calendarUrl.match(/ical\/([^\/]+)\//);
+            if (match) calendarId = decodeURIComponent(match[1]);
+        } else {
+            // Try to extract from other formats
+            const match = calendarUrl.match(/calendar\/([^\/?&]+)/);
+            if (match) calendarId = decodeURIComponent(match[1]);
+        }
+
+        if (!calendarId) {
+            console.warn('Could not extract calendar ID from URL');
+            return [];
+        }
+
+        // Construct the public iCal feed URL
+        const icalUrl = `https://calendar.google.com/calendar/ical/${encodeURIComponent(calendarId)}/public/basic.ics`;
+
+        const response = await fetch(icalUrl);
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+        
+        const icsText = await response.text();
+        
+        // Parse the iCal data (very basic parser for VEVENTs)
+        const events = [];
+        const veventBlocks = icsText.split('BEGIN:VEVENT').slice(1);
+        
+        for (const block of veventBlocks) {
+            const summaryMatch = block.match(/SUMMARY:(.*)/);
+            const dtstartMatch = block.match(/DTSTART(?:;[^:]+)?:([0-9T]+)/);
+            const dtendMatch = block.match(/DTEND(?:;[^:]+)?:([0-9T]+)/);
+            const descMatch = block.match(/DESCRIPTION:(.*)/);
+            const locMatch = block.match(/LOCATION:(.*)/);
+
+            if (summaryMatch && dtstartMatch) {
+                // Convert date string to ISO
+                let start = dtstartMatch[1];
+                
+                if (start.length === 8) {
+                    // Format: YYYYMMDD
+                    start = `${start.slice(0,4)}-${start.slice(4,6)}-${start.slice(6,8)}T00:00:00Z`;
+                } else if (start.length === 15 && start.endsWith('Z')) {
+                    // Format: YYYYMMDDTHHMMSSZ
+                    start = `${start.slice(0,4)}-${start.slice(4,6)}-${start.slice(6,8)}T${start.slice(9,11)}:${start.slice(11,13)}:${start.slice(13,15)}Z`;
+                } else if (start.length === 15 && start.includes('T')) {
+                    // Format: YYYYMMDDTHHMMSS (without Z)
+                    start = `${start.slice(0,4)}-${start.slice(4,6)}-${start.slice(6,8)}T${start.slice(9,11)}:${start.slice(11,13)}:${start.slice(13,15)}Z`;
+                } else {
+                    continue; // Skip this event if we can't parse the date
+                }
+
+                let end = dtendMatch ? dtendMatch[1] : null;
+                if (end) {
+                    if (end.length === 8) {
+                        end = `${end.slice(0,4)}-${end.slice(4,6)}-${end.slice(6,8)}T00:00:00Z`;
+                    } else if (end.length === 15 && end.endsWith('Z')) {
+                        end = `${end.slice(0,4)}-${end.slice(4,6)}-${end.slice(6,8)}T${end.slice(9,11)}:${end.slice(11,13)}:${end.slice(13,15)}Z`;
+                    } else if (end.length === 15 && end.includes('T')) {
+                        end = `${end.slice(0,4)}-${end.slice(4,6)}-${end.slice(6,8)}T${end.slice(9,11)}:${end.slice(11,13)}:${end.slice(13,15)}Z`;
+                    }
+                }
+
+                // Create a stable ID based on event data (include date to ensure uniqueness)
+                const eventData = `${summaryMatch[1]}-${start}-${end || ''}`;
+                // Use a hash-like approach to create unique IDs
+                const hash = require('crypto').createHash('md5').update(eventData).digest('hex');
+                const eventId = `cal-${hash.substring(0, 12)}`;
+                
+                events.push({
+                    id: eventId,
+                    title: summaryMatch[1].replace(/\\n/g, '\n'),
+                    date: start,
+                    endDate: end,
+                    description: descMatch ? descMatch[1].replace(/\\n/g, '\n') : '',
+                    location: locMatch ? locMatch[1].replace(/\\n/g, '\n') : '',
+                    source: 'calendar'
+                });
+            }
+        }
+
+        return events;
+    } catch (error) {
+        console.error('Error fetching calendar events:', error);
+        return [];
+    }
+}
+
+// Function to filter events by time range
+function filterEventsByTimeRange(events, timeRange) {
+    const now = new Date();
+    
+    return events.filter(event => {
+        const eventDate = new Date(event.date);
+        
+        switch (timeRange) {
+            case 'future':
+                return eventDate > now;
+            case 'past':
+                return eventDate < now;
+            case 'all':
+            default:
+                return true;
+        }
+    });
+}
+
 // API Routes
 
-// Get all events
-app.get('/api/events', (req, res) => {
+// Get configuration
+app.get('/api/config', (req, res) => {
     try {
-        const events = readJsonFile(EVENTS_FILE);
-        res.json(events);
+        res.json(appConfig);
+    } catch (error) {
+        console.error('Error fetching config:', error);
+        res.status(500).json({ error: 'Failed to fetch configuration' });
+    }
+});
+
+// Get all events
+app.get('/api/events', async (req, res) => {
+    try {
+        const timeRange = req.query.timeRange || appConfig.events.defaultTimeRange;
+        let events = readJsonFile(EVENTS_FILE);
+        const rsvps = readJsonFile(RSVPS_FILE);
+        
+        // If auto-fetch is enabled, fetch from calendar
+        if (appConfig.events.autoFetch) {
+            const calendarEvents = await fetchCalendarEvents();
+            // Merge calendar events with existing events, avoiding duplicates
+            const existingIds = new Set(events.map(e => e.id));
+            const newCalendarEvents = calendarEvents.filter(e => !existingIds.has(e.id));
+            
+            if (newCalendarEvents.length > 0) {
+                events = [...events, ...newCalendarEvents];
+                // Save the updated events to file
+                writeJsonFile(EVENTS_FILE, events);
+            }
+        }
+        
+        // Filter by time range
+        const filteredEvents = filterEventsByTimeRange(events, timeRange);
+
+        // Aggregate attendance data
+        const eventsWithAttendance = filteredEvents.map(event => {
+            const eventRsvps = rsvps.filter(rsvp => rsvp.eventId === event.id && rsvp.attendance === 'yes');
+            const attendees = eventRsvps.filter(rsvp => !rsvp.isAnonymous).map(rsvp => rsvp.attendeeName);
+            const anonymousCount = eventRsvps.filter(rsvp => rsvp.isAnonymous).length;
+            
+            return {
+                ...event,
+                attendees,
+                anonymousCount,
+                attendingCount: eventRsvps.length
+            };
+        });
+        
+        res.json(eventsWithAttendance);
     } catch (error) {
         console.error('Error fetching events:', error);
         res.status(500).json({ error: 'Failed to fetch events' });
@@ -114,23 +296,23 @@ app.get('/api/events/:id', (req, res) => {
     }
 });
 
-// Submit RSVP
+// Submit RSVP (simplified +/- button logic)
 app.post('/api/rsvp', (req, res) => {
     try {
-        const { eventId, attendance, attendeeName, isAnonymous, comments } = req.body;
+        const { eventId, action, attendeeName } = req.body; // action: 'add' or 'remove'
         
         // Validation
-        if (!eventId || !attendance) {
+        if (!eventId || !action) {
             return res.status(400).json({ 
                 success: false, 
-                message: 'Event ID and attendance status are required' 
+                message: 'Event ID and action are required' 
             });
         }
         
-        if (!['yes', 'no', 'maybe'].includes(attendance)) {
+        if (!['add', 'remove'].includes(action)) {
             return res.status(400).json({ 
                 success: false, 
-                message: 'Invalid attendance status' 
+                message: 'Invalid action. Must be "add" or "remove"' 
             });
         }
         
@@ -147,26 +329,48 @@ app.post('/api/rsvp', (req, res) => {
         // Read existing RSVPs
         const rsvps = readJsonFile(RSVPS_FILE);
         
-        // Create new RSVP
-        const newRsvp = {
-            id: uuidv4(),
-            eventId,
-            attendance,
-            attendeeName: isAnonymous ? 'Anonymous' : (attendeeName || 'Anonymous'),
-            isAnonymous: Boolean(isAnonymous),
-            comments: comments || '',
-            timestamp: new Date().toISOString()
-        };
-        
-        // Add to RSVPs array
-        rsvps.push(newRsvp);
+        if (action === 'add') {
+            // Add new RSVP
+            const newRsvp = {
+                id: uuidv4(),
+                eventId,
+                attendance: 'yes', // Always "attending" when adding
+                attendeeName: attendeeName || 'Anonymous',
+                isAnonymous: !attendeeName,
+                timestamp: new Date().toISOString()
+            };
+            
+            rsvps.push(newRsvp);
+        } else if (action === 'remove') {
+            // Remove RSVP - if name provided, remove specific person, otherwise remove anonymous count
+            if (attendeeName) {
+                // Remove specific person by name
+                const index = rsvps.findIndex(rsvp => 
+                    rsvp.eventId === eventId && 
+                    rsvp.attendeeName === attendeeName && 
+                    rsvp.attendance === 'yes'
+                );
+                if (index !== -1) {
+                    rsvps.splice(index, 1);
+                }
+            } else {
+                // Remove one anonymous attendance
+                const anonymousIndex = rsvps.findIndex(rsvp => 
+                    rsvp.eventId === eventId && 
+                    rsvp.attendeeName === 'Anonymous' && 
+                    rsvp.attendance === 'yes'
+                );
+                if (anonymousIndex !== -1) {
+                    rsvps.splice(anonymousIndex, 1);
+                }
+            }
+        }
         
         // Save to file
         if (writeJsonFile(RSVPS_FILE, rsvps)) {
             res.json({ 
                 success: true, 
-                message: 'RSVP submitted successfully',
-                rsvpId: newRsvp.id
+                message: `RSVP ${action === 'add' ? 'added' : 'removed'} successfully`
             });
         } else {
             res.status(500).json({ 
@@ -184,88 +388,7 @@ app.post('/api/rsvp', (req, res) => {
     }
 });
 
-// Get attendance summary for all events
-app.get('/api/attendance-summary', (req, res) => {
-    try {
-        const events = readJsonFile(EVENTS_FILE);
-        const rsvps = readJsonFile(RSVPS_FILE);
-        
-        const summary = events.map(event => {
-            const eventRsvps = rsvps.filter(rsvp => rsvp.eventId === event.id);
-            
-            const attending = eventRsvps.filter(rsvp => rsvp.attendance === 'yes').length;
-            const notAttending = eventRsvps.filter(rsvp => rsvp.attendance === 'no').length;
-            const maybe = eventRsvps.filter(rsvp => rsvp.attendance === 'maybe').length;
-            
-            const attendees = eventRsvps
-                .filter(rsvp => rsvp.attendance === 'yes')
-                .map(rsvp => ({
-                    name: rsvp.attendeeName,
-                    status: rsvp.attendance,
-                    isAnonymous: rsvp.isAnonymous,
-                    comments: rsvp.comments
-                }));
-            
-            return {
-                eventId: event.id,
-                eventTitle: event.title,
-                attending,
-                notAttending,
-                maybe,
-                total: eventRsvps.length,
-                attendees
-            };
-        });
-        
-        res.json(summary);
-    } catch (error) {
-        console.error('Error fetching attendance summary:', error);
-        res.status(500).json({ error: 'Failed to fetch attendance summary' });
-    }
-});
 
-// Get attendance summary for a specific event
-app.get('/api/attendance-summary/:eventId', (req, res) => {
-    try {
-        const { eventId } = req.params;
-        const events = readJsonFile(EVENTS_FILE);
-        const rsvps = readJsonFile(RSVPS_FILE);
-        
-        const event = events.find(e => e.id === eventId);
-        if (!event) {
-            return res.status(404).json({ error: 'Event not found' });
-        }
-        
-        const eventRsvps = rsvps.filter(rsvp => rsvp.eventId === eventId);
-        
-        const attending = eventRsvps.filter(rsvp => rsvp.attendance === 'yes').length;
-        const notAttending = eventRsvps.filter(rsvp => rsvp.attendance === 'no').length;
-        const maybe = eventRsvps.filter(rsvp => rsvp.attendance === 'maybe').length;
-        
-        const attendees = eventRsvps.map(rsvp => ({
-            name: rsvp.attendeeName,
-            status: rsvp.attendance,
-            isAnonymous: rsvp.isAnonymous,
-            comments: rsvp.comments,
-            timestamp: rsvp.timestamp
-        }));
-        
-        const summary = {
-            eventId: event.id,
-            eventTitle: event.title,
-            attending,
-            notAttending,
-            maybe,
-            total: eventRsvps.length,
-            attendees
-        };
-        
-        res.json(summary);
-    } catch (error) {
-        console.error('Error fetching event attendance summary:', error);
-        res.status(500).json({ error: 'Failed to fetch event attendance summary' });
-    }
-});
 
 // Add new event (for future use)
 app.post('/api/events', (req, res) => {

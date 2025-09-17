@@ -148,6 +148,36 @@ section h2 {
     font-size: 1.1rem;
 }
 
+.time-range-selector {
+    margin-bottom: 24px;
+    padding: 16px;
+    background: #f7fafc;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.time-range-selector label {
+    font-weight: 600;
+    color: #2d3748;
+}
+
+.time-range-selector select {
+    padding: 8px 12px;
+    border: 2px solid #e2e8f0;
+    border-radius: 6px;
+    font-size: 1rem;
+    background: white;
+    cursor: pointer;
+}
+
+.time-range-selector select:focus {
+    outline: none;
+    border-color: #667eea;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
 #events-list {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
@@ -169,10 +199,41 @@ section h2 {
 }
 
 .event-card h3 {
-    color: #1a202c;
-    font-size: 1.3rem;
-    font-weight: 600;
-    margin-bottom: 12px;
+    margin-top: 0;
+    color: #333;
+}
+
+.event-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 15px;
+}
+
+.attendance-info {
+    position: relative;
+    cursor: pointer;
+}
+
+.attendance-info span {
+    background-color: #eee;
+    padding: 5px 10px;
+    border-radius: 5px;
+    font-size: 0.9em;
+}
+
+.attendance-info:hover::after {
+    content: attr(title);
+    position: absolute;
+    left: 0;
+    bottom: 125%;
+    background-color: #333;
+    color: #fff;
+    padding: 10px;
+    border-radius: 5px;
+    z-index: 1;
+    width: max-content;
+    font-size: 0.9em;
 }
 
 .event-date {
@@ -212,6 +273,70 @@ section h2 {
     box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
 }
 
+/* Event RSVP buttons (smaller, inline) */
+.event-rsvp-buttons {
+    display: flex;
+    gap: 8px;
+    margin-top: 16px;
+}
+
+.rsvp-add-btn-small,
+.rsvp-remove-btn-small {
+    flex: 1;
+    padding: 8px 12px;
+    border: none;
+    border-radius: 6px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    width: 120px; /* Set a fixed width */
+}
+
+.rsvp-add-btn-small {
+    background: linear-gradient(135deg, #48bb78 0%, #38a169 100%);
+    color: white;
+}
+
+.rsvp-add-btn-small:hover {
+    background: linear-gradient(135deg, #38a169 0%, #2f855a 100%);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(72, 187, 120, 0.3);
+}
+
+.rsvp-remove-btn-small {
+    background: linear-gradient(135deg, #f56565 0%, #e53e3e 100%);
+    color: white;
+}
+
+.rsvp-remove-btn-small:hover {
+    background: linear-gradient(135deg, #e53e3e 0%, #c53030 100%);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(245, 101, 101, 0.3);
+}
+
+.rsvp-add-btn-small .icon,
+.rsvp-remove-btn-small .icon {
+    font-size: 1.1rem;
+    font-weight: 700;
+}
+
+.rsvp-disabled {
+    background: #f7fafc;
+    color: #a0aec0;
+    padding: 12px;
+    border-radius: 6px;
+    text-align: center;
+    font-size: 0.9rem;
+    font-weight: 500;
+    margin-top: 16px;
+    border: 1px solid #e2e8f0;
+}
+
 /* Modal styles */
 .modal {
     position: fixed;
@@ -232,14 +357,24 @@ section h2 {
 }
 
 .modal-content {
-    background: white;
-    border-radius: 16px;
-    width: 100%;
+    background: #fff;
+    padding: 30px;
+    border-radius: 10px;
+    box-shadow: 0 5px 20px rgba(0,0,0,0.2);
+    width: 90%;
     max-width: 500px;
-    max-height: 90vh;
-    overflow-y: auto;
-    box-shadow: 0 25px 50px rgba(0, 0, 0, 0.25);
-    animation: modalSlideIn 0.3s ease-out;
+    position: relative;
+}
+
+#remove-rsvp-modal .form-group {
+    margin-bottom: 20px;
+}
+
+#remove-rsvp-modal select {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
 }
 
 @keyframes modalSlideIn {
@@ -310,6 +445,61 @@ section h2 {
 #event-details p {
     color: #4a5568;
     margin-bottom: 4px;
+}
+
+/* RSVP Actions */
+.rsvp-actions {
+    margin-top: 24px;
+}
+
+.rsvp-buttons {
+    display: flex;
+    gap: 16px;
+    margin: 24px 0;
+}
+
+.rsvp-add-btn,
+.rsvp-remove-btn {
+    flex: 1;
+    padding: 16px 24px;
+    border: none;
+    border-radius: 12px;
+    font-size: 1.1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+}
+
+.rsvp-add-btn {
+    background: linear-gradient(135deg, #48bb78 0%, #38a169 100%);
+    color: white;
+}
+
+.rsvp-add-btn:hover {
+    background: linear-gradient(135deg, #38a169 0%, #2f855a 100%);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(72, 187, 120, 0.3);
+}
+
+.rsvp-remove-btn {
+    background: linear-gradient(135deg, #f56565 0%, #e53e3e 100%);
+    color: white;
+}
+
+.rsvp-remove-btn:hover {
+    background: linear-gradient(135deg, #e53e3e 0%, #c53030 100%);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(245, 101, 101, 0.3);
+}
+
+.rsvp-add-btn .icon,
+.rsvp-remove-btn .icon {
+    font-size: 1.5rem;
+    font-weight: 700;
 }
 
 /* Form styles */
@@ -427,6 +617,14 @@ section h2 {
     color: #667eea;
 }
 
+.stat.attending .count {
+    color: #48bb78;
+}
+
+.stat.not-attending .count {
+    color: #f56565;
+}
+
 .stat .label {
     font-size: 0.9rem;
     color: #718096;
@@ -536,6 +734,22 @@ footer {
     
     .attendance-stats {
         grid-template-columns: repeat(2, 1fr);
+    }
+    
+    .rsvp-buttons {
+        flex-direction: column;
+        gap: 12px;
+    }
+    
+    .event-rsvp-buttons {
+        flex-direction: column;
+        gap: 8px;
+    }
+    
+    .time-range-selector {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 8px;
     }
     
     #calendar-container iframe {
