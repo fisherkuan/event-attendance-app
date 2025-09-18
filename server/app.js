@@ -2,7 +2,7 @@ const express = require('express');
 const cors = require('cors');
 const bodyParser = require('body-parser');
 const path = require('path');
-const fs = require('fs');
+const { Pool } = require('pg');
 const { v4: uuidv4 } = require('uuid');
 
 // Load environment variables
@@ -19,17 +19,18 @@ app.use(bodyParser.urlencoded({ extended: true }));
 // Serve static files from public directory
 app.use(express.static(path.join(__dirname, '../public')));
 
-// Data storage paths
-const DATA_DIR = path.join(__dirname, '../data');
-const CONFIG_DIR = path.join(__dirname, '../config');
-const EVENTS_FILE = path.join(DATA_DIR, 'events.json');
-const RSVPS_FILE = path.join(DATA_DIR, 'rsvps.json');
-const CONFIG_FILE = path.join(CONFIG_DIR, 'app.json');
+// Database connection
+const pool = new Pool({
+    connectionString: process.env.DATABASE_URL,
+    ssl: {
+        rejectUnauthorized: false
+    }
+});
 
 // Load configuration
 let appConfig = {};
 try {
-    appConfig = JSON.parse(fs.readFileSync(CONFIG_FILE, 'utf8'));
+    appConfig = require('../config/app.json');
 } catch (error) {
     console.error('Error loading config file:', error);
     appConfig = {
@@ -39,63 +40,36 @@ try {
     };
 }
 
-// Ensure data directory exists
-if (!fs.existsSync(DATA_DIR)) {
-    fs.mkdirSync(DATA_DIR, { recursive: true });
-}
-
-// Initialize data files if they don't exist
-function initializeDataFiles() {
-    if (!fs.existsSync(EVENTS_FILE)) {
-        const sampleEvents = [
-            {
-                id: '1',
-                title: 'Team Meeting',
-                date: '2024-01-20T10:00:00Z',
-                description: 'Weekly team sync meeting',
-                location: 'Conference Room A'
-            },
-            {
-                id: '2',
-                title: 'Company All-Hands',
-                date: '2024-01-25T14:00:00Z',
-                description: 'Quarterly company meeting',
-                location: 'Main Auditorium'
-            },
-            {
-                id: '3',
-                title: 'Holiday Party',
-                date: '2024-01-30T18:00:00Z',
-                description: 'Annual company holiday celebration',
-                location: 'Event Hall'
-            }
-        ];
-        fs.writeFileSync(EVENTS_FILE, JSON.stringify(sampleEvents, null, 2));
-    }
-
-    if (!fs.existsSync(RSVPS_FILE)) {
-        fs.writeFileSync(RSVPS_FILE, JSON.stringify([], null, 2));
-    }
-}
-
-// Helper functions for data operations
-function readJsonFile(filePath) {
+// Initialize database schema
+async function initializeDatabase() {
+    const client = await pool.connect();
     try {
-        const data = fs.readFileSync(filePath, 'utf8');
-        return JSON.parse(data);
-    } catch (error) {
-        console.error(`Error reading file ${filePath}:`, error);
-        return [];
-    }
-}
+        await client.query(`
+            CREATE TABLE IF NOT EXISTS events (
+                id VARCHAR(255) PRIMARY KEY,
+                title VARCHAR(255) NOT NULL,
+                date TIMESTAMPTZ NOT NULL,
+                description TEXT,
+                location VARCHAR(255),
+                source VARCHAR(255),
+                endDate TIMESTAMPTZ
+            );
+        `);
 
-function writeJsonFile(filePath, data) {
-    try {
-        fs.writeFileSync(filePath, JSON.stringify(data, null, 2));
-        return true;
+        await client.query(`
+            CREATE TABLE IF NOT EXISTS rsvps (
+                id VARCHAR(255) PRIMARY KEY,
+                event_id VARCHAR(255) REFERENCES events(id) ON DELETE CASCADE,
+                attendee_name VARCHAR(255) NOT NULL,
+                attendance VARCHAR(255) NOT NULL,
+                timestamp TIMESTAMPTZ NOT NULL
+            );
+        `);
+        console.log('Database schema initialized.');
     } catch (error) {
-        console.error(`Error writing file ${filePath}:`, error);
-        return false;
+        console.error('Error initializing database schema:', error);
+    } finally {
+        client.release();
     }
 }
 
@@ -186,11 +160,11 @@ async function fetchCalendarEvents() {
                 
                 events.push({
                     id: eventId,
-                    title: summaryMatch[1].replace(/\\n/g, '\n'),
+                    title: summaryMatch[1].replace(/\n/g, '\n'),
                     date: start,
                     endDate: end,
-                    description: descMatch ? descMatch[1].replace(/\\n/g, '\n') : '',
-                    location: locMatch ? locMatch[1].replace(/\\n/g, '\n') : '',
+                    description: descMatch ? descMatch[1].replace(/\n/g, '\n') : '',
+                    location: locMatch ? locMatch[1].replace(/\n/g, '\n') : '',
                     source: 'calendar'
                 });
             }
@@ -201,25 +175,6 @@ async function fetchCalendarEvents() {
         console.error('Error fetching calendar events:', error);
         return [];
     }
-}
-
-// Function to filter events by time range
-function filterEventsByTimeRange(events, timeRange) {
-    const now = new Date();
-    
-    return events.filter(event => {
-        const eventDate = new Date(event.date);
-        
-        switch (timeRange) {
-            case 'future':
-                return eventDate > now;
-            case 'past':
-                return eventDate < now;
-            case 'all':
-            default:
-                return true;
-        }
-    });
 }
 
 // API Routes
@@ -236,37 +191,56 @@ app.get('/api/config', (req, res) => {
 
 // Get all events
 app.get('/api/events', async (req, res) => {
+    const client = await pool.connect();
     try {
         const timeRange = req.query.timeRange || appConfig.events.defaultTimeRange;
-        let allEvents = readJsonFile(EVENTS_FILE);
-        let allRsvps = readJsonFile(RSVPS_FILE);
 
         if (appConfig.events.autoFetch) {
             const calendarEvents = await fetchCalendarEvents();
-            const calendarEventIds = new Set(calendarEvents.map(e => e.id));
-
-            const nonCalendarEvents = allEvents.filter(e => e.source !== 'calendar');
-
-            const staleEventIds = allEvents
-                .filter(e => e.source === 'calendar' && !calendarEventIds.has(e.id))
-                .map(e => e.id);
-
-            const finalEvents = [...nonCalendarEvents, ...calendarEvents];
-            const finalRsvps = allRsvps.filter(r => !staleEventIds.includes(r.eventId));
-
-            writeJsonFile(EVENTS_FILE, finalEvents);
-            writeJsonFile(RSVPS_FILE, finalRsvps);
-
-            allEvents = finalEvents;
-            allRsvps = finalRsvps;
+            if (calendarEvents.length > 0) {
+                await client.query('BEGIN');
+                // Remove old calendar events
+                await client.query(`DELETE FROM events WHERE source = 'calendar'`);
+                // Insert new calendar events
+                for (const event of calendarEvents) {
+                    await client.query(
+                        `INSERT INTO events (id, title, date, endDate, description, location, source)
+                         VALUES ($1, $2, $3, $4, $5, $6, $7)
+                         ON CONFLICT (id) DO UPDATE SET
+                            title = $2,
+                            date = $3,
+                            endDate = $4,
+                            description = $5,
+                            location = $6,
+                            source = $7`,
+                        [event.id, event.title, event.date, event.endDate, event.description, event.location, event.source]
+                    );
+                }
+                await client.query('COMMIT');
+            }
         }
 
-        const filteredEvents = filterEventsByTimeRange(allEvents, timeRange);
+        let timeRangeFilter = '';
+        const now = new Date();
+        switch (timeRange) {
+            case 'future':
+                timeRangeFilter = 'WHERE date > NOW()';
+                break;
+            case 'past':
+                timeRangeFilter = 'WHERE date < NOW()';
+                break;
+            case 'all':
+            default:
+                timeRangeFilter = '';
+                break;
+        }
 
-        const eventsWithAttendance = filteredEvents.map(event => {
-            const eventRsvps = allRsvps.filter(rsvp => rsvp.eventId === event.id && rsvp.attendance === 'yes');
-            const attendees = eventRsvps.map(rsvp => rsvp.attendeeName);
+        const eventsResult = await client.query(`SELECT * FROM events ${timeRangeFilter} ORDER BY date`);
+        const rsvpsResult = await client.query('SELECT * FROM rsvps');
 
+        const eventsWithAttendance = eventsResult.rows.map(event => {
+            const eventRsvps = rsvpsResult.rows.filter(rsvp => rsvp.event_id === event.id && rsvp.attendance === 'yes');
+            const attendees = eventRsvps.map(rsvp => rsvp.attendee_name);
             return {
                 ...event,
                 attendees,
@@ -278,134 +252,95 @@ app.get('/api/events', async (req, res) => {
     } catch (error) {
         console.error('Error fetching events:', error);
         res.status(500).json({ error: 'Failed to fetch events' });
+    } finally {
+        client.release();
     }
 });
 
 // Get a specific event
-app.get('/api/events/:id', (req, res) => {
+app.get('/api/events/:id', async (req, res) => {
+    const client = await pool.connect();
     try {
-        const events = readJsonFile(EVENTS_FILE);
-        const event = events.find(e => e.id === req.params.id);
-        
+        const { id } = req.params;
+        const result = await client.query('SELECT * FROM events WHERE id = $1', [id]);
+        const event = result.rows[0];
+
         if (!event) {
             return res.status(404).json({ error: 'Event not found' });
         }
-        
+
         res.json(event);
     } catch (error) {
         console.error('Error fetching event:', error);
         res.status(500).json({ error: 'Failed to fetch event' });
+    } finally {
+        client.release();
     }
 });
 
-// Submit RSVP (simplified +/- button logic)
-app.post('/api/rsvp', (req, res) => {
+// Submit RSVP
+app.post('/api/rsvp', async (req, res) => {
+    const client = await pool.connect();
     try {
-        const { eventId, action, attendeeName } = req.body; // action: 'add' or 'remove'
-        
-        // Validation
+        const { eventId, action, attendeeName } = req.body;
+
         if (!eventId || !action) {
-            return res.status(400).json({ 
-                success: false, 
-                message: 'Event ID and action are required' 
-            });
+            return res.status(400).json({ success: false, message: 'Event ID and action are required' });
         }
-        
+
         if (!['add', 'remove'].includes(action)) {
-            return res.status(400).json({ 
-                success: false, 
-                message: 'Invalid action. Must be "add" or "remove"' 
-            });
+            return res.status(400).json({ success: false, message: 'Invalid action. Must be "add" or "remove"' });
         }
-        
-        // Check if event exists
-        const events = readJsonFile(EVENTS_FILE);
-        const event = events.find(e => e.id === eventId);
-        if (!event) {
-            return res.status(404).json({ 
-                success: false, 
-                message: 'Event not found' 
-            });
+
+        const eventResult = await client.query('SELECT * FROM events WHERE id = $1', [eventId]);
+        if (eventResult.rows.length === 0) {
+            return res.status(404).json({ success: false, message: 'Event not found' });
         }
-        
-        // Read existing RSVPs
-        const rsvps = readJsonFile(RSVPS_FILE);
-        
+
         if (action === 'add') {
             if (!attendeeName) {
-                return res.status(400).json({ 
-                    success: false, 
-                    message: 'Attendee name is required' 
-                });
+                return res.status(400).json({ success: false, message: 'Attendee name is required' });
             }
-            // Add new RSVP
             const newRsvp = {
                 id: uuidv4(),
                 eventId,
-                attendance: 'yes', // Always "attending" when adding
-                attendeeName: attendeeName,
-                timestamp: new Date().toISOString()
+                attendance: 'yes',
+                attendeeName,
+                timestamp: new Date()
             };
-            
-            rsvps.push(newRsvp);
+            await client.query(
+                'INSERT INTO rsvps (id, event_id, attendee_name, attendance, timestamp) VALUES ($1, $2, $3, $4, $5)',
+                [newRsvp.id, newRsvp.eventId, newRsvp.attendeeName, newRsvp.attendance, newRsvp.timestamp]
+            );
         } else if (action === 'remove') {
-            // Remove RSVP - if name provided, remove specific person
-            if (attendeeName) {
-                // Remove specific person by name
-                const index = rsvps.findIndex(rsvp => 
-                    rsvp.eventId === eventId && 
-                    rsvp.attendeeName === attendeeName && 
-                    rsvp.attendance === 'yes'
-                );
-                if (index !== -1) {
-                    rsvps.splice(index, 1);
-                }
-            } else {
-                return res.status(400).json({ 
-                    success: false, 
-                    message: 'Attendee name is required to remove an RSVP' 
-                });
+            if (!attendeeName) {
+                return res.status(400).json({ success: false, message: 'Attendee name is required to remove an RSVP' });
             }
+            await client.query(
+                'DELETE FROM rsvps WHERE event_id = $1 AND attendee_name = $2 AND attendance = $3',
+                [eventId, attendeeName, 'yes']
+            );
         }
-        
-        // Save to file
-        if (writeJsonFile(RSVPS_FILE, rsvps)) {
-            res.json({ 
-                success: true, 
-                message: `RSVP ${action === 'add' ? 'added' : 'removed'} successfully`
-            });
-        } else {
-            res.status(500).json({ 
-                success: false, 
-                message: 'Failed to save RSVP' 
-            });
-        }
-        
+
+        res.json({ success: true, message: `RSVP ${action === 'add' ? 'added' : 'removed'} successfully` });
     } catch (error) {
         console.error('Error submitting RSVP:', error);
-        res.status(500).json({ 
-            success: false, 
-            message: 'Internal server error' 
-        });
+        res.status(500).json({ success: false, message: 'Internal server error' });
+    } finally {
+        client.release();
     }
 });
 
-
-
-// Add new event (for future use)
-app.post('/api/events', (req, res) => {
+// Add new event
+app.post('/api/events', async (req, res) => {
+    const client = await pool.connect();
     try {
         const { title, date, description, location } = req.body;
-        
+
         if (!title || !date) {
-            return res.status(400).json({ 
-                success: false, 
-                message: 'Title and date are required' 
-            });
+            return res.status(400).json({ success: false, message: 'Title and date are required' });
         }
-        
-        const events = readJsonFile(EVENTS_FILE);
-        
+
         const newEvent = {
             id: uuidv4(),
             title,
@@ -413,28 +348,18 @@ app.post('/api/events', (req, res) => {
             description: description || '',
             location: location || ''
         };
-        
-        events.push(newEvent);
-        
-        if (writeJsonFile(EVENTS_FILE, events)) {
-            res.json({ 
-                success: true, 
-                message: 'Event created successfully',
-                event: newEvent
-            });
-        } else {
-            res.status(500).json({ 
-                success: false, 
-                message: 'Failed to save event' 
-            });
-        }
-        
+
+        await client.query(
+            'INSERT INTO events (id, title, date, description, location) VALUES ($1, $2, $3, $4, $5)',
+            [newEvent.id, newEvent.title, newEvent.date, newEvent.description, newEvent.location]
+        );
+
+        res.json({ success: true, message: 'Event created successfully', event: newEvent });
     } catch (error) {
         console.error('Error creating event:', error);
-        res.status(500).json({ 
-            success: false, 
-            message: 'Internal server error' 
-        });
+        res.status(500).json({ success: false, message: 'Internal server error' });
+    } finally {
+        client.release();
     }
 });
 
@@ -451,18 +376,16 @@ app.get('*', (req, res) => {
 // Error handling middleware
 app.use((err, req, res, next) => {
     console.error('Unhandled error:', err);
-    res.status(500).json({ 
-        success: false, 
-        message: 'Internal server error' 
+    res.status(500).json({
+        success: false,
+        message: 'Internal server error'
     });
 });
 
-// Initialize data files
-initializeDataFiles();
-
-// Start server
-app.listen(PORT, () => {
-    console.log(`🚀 Event Attendance App server running on http://localhost:${PORT}`);
-    console.log(`📊 Data files initialized in: ${DATA_DIR}`);
-    console.log('🎉 Ready to accept RSVPs!');
+// Initialize database and start server
+initializeDatabase().then(() => {
+    app.listen(PORT, () => {
+        console.log(`🚀 Event Attendance App server running on http://localhost:${PORT}`);
+        console.log('🎉 Ready to accept RSVPs!');
+    });
 });
