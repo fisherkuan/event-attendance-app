@@ -123,8 +123,9 @@ async function fetchCalendarEvents() {
             const dtendMatch = block.match(/DTEND(?:;[^:]+)?:([0-9T]+)/);
             const descMatch = block.match(/DESCRIPTION:(.*)/);
             const locMatch = block.match(/LOCATION:(.*)/);
+            const uidMatch = block.match(/UID:(.*)/);
 
-            if (summaryMatch && dtstartMatch) {
+            if (summaryMatch && dtstartMatch && uidMatch) {
                 // Convert date string to ISO
                 let start = dtstartMatch[1];
                 
@@ -152,19 +153,16 @@ async function fetchCalendarEvents() {
                     }
                 }
 
-                // Create a stable ID based on event data (include date to ensure uniqueness)
-                const eventData = `${summaryMatch[1]}-${start}-${end || ''}`;
-                // Use a hash-like approach to create unique IDs
-                const hash = require('crypto').createHash('md5').update(eventData).digest('hex');
-                const eventId = `cal-${hash.substring(0, 12)}`;
+                // Use the UID as the stable event ID
+                const eventId = `cal-${uidMatch[1]}`.trim();
                 
                 events.push({
                     id: eventId,
-                    title: summaryMatch[1].replace(/\n/g, '\n'),
+                    title: summaryMatch[1].replace(/\n/g, '\n').trim(),
                     date: start,
                     endDate: end,
-                    description: descMatch ? descMatch[1].replace(/\n/g, '\n') : '',
-                    location: locMatch ? locMatch[1].replace(/\n/g, '\n') : '',
+                    description: descMatch ? descMatch[1].replace(/\n/g, '\n').trim() : '',
+                    location: locMatch ? locMatch[1].replace(/\n/g, '\n').trim() : '',
                     source: 'calendar'
                 });
             }
@@ -176,6 +174,7 @@ async function fetchCalendarEvents() {
         return [];
     }
 }
+
 
 // API Routes
 
