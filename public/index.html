@@ -18,6 +18,7 @@
             <!-- Google Calendar Integration Section -->
             <section class="calendar-section">
                 <h2>Calendar</h2>
+                <a href="#" id="join-contributor-link">Join as a calendar contributor</a>
                 <div id="calendar-container">
                     <!-- Google Calendar iframe will be inserted here -->
                     <div id="calendar-placeholder">
@@ -115,8 +116,37 @@
 
         
 
+        <!-- Feedback Button -->
+        <button id="feedback-btn" class="feedback-btn">?</button>
+
+        <!-- Feedback Modal -->
+        <div id="feedback-modal" class="modal hidden">
+            <div class="modal-content feedback-modal-content">
+                <div class="modal-header">
+                    <button id="close-feedback-modal-btn" class="close-btn">&times;</button>
+                </div>
+                <div class="modal-body feedback-modal-body">
+                    <iframe src="https://docs.google.com/forms/d/e/1FAIpQLScEcmD-j6pd9U9q323nQT5xMf2G8AW2X4GkUAlGOr89ZlNwGg/viewform?embedded=true" frameborder="0" marginheight="0" marginwidth="0">Loading…</iframe>
+                </div>
+            </div>
+        </div>
+
+        <!-- Join Contributor Modal -->
+        <div id="join-contributor-modal" class="modal hidden">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3>Join as a Calendar Contributor</h3>
+                    <button id="close-join-contributor-modal-btn" class="close-btn">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <p style="margin-bottom: 15px;">Please fill out this form to request to become a calendar contributor.</p>
+                    <iframe src="https://docs.google.com/forms/d/e/1FAIpQLScCtCTIywAHHGDyExtiTxw-exz_KkKB2rzjPl3et31iBzR7SQ/viewform?embedded=true" width="100%" height="618" frameborder="0" marginheight="0" marginwidth="0">Loading…</iframe>
+                </div>
+            </div>
+        </div>
+
         <footer>
-            <p>&copy; 2025 Taiwanese Leuven SportsCenter</p>
+            <p>&copy; Built by Fisher Kuan</p>
         </footer>
     </div>
 

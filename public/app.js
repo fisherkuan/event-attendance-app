@@ -341,3 +341,56 @@ window.EventAttendanceApp = {
     submitRsvp,
     submitRsvpDirect
 };
+
+// Feedback Modal Logic
+const feedbackModal = document.getElementById("feedback-modal");
+const feedbackBtn = document.getElementById("feedback-btn");
+const closeFeedbackBtn = document.getElementById("close-feedback-modal-btn");
+
+if (feedbackBtn) {
+    feedbackBtn.onclick = function() {
+      feedbackModal.classList.remove("hidden");
+    }
+}
+
+if (closeFeedbackBtn) {
+    closeFeedbackBtn.onclick = function() {
+      feedbackModal.classList.add("hidden");
+    }
+}
+
+// Close feedback modal when clicking outside
+if (feedbackModal) {
+    feedbackModal.addEventListener('click', function(e) {
+        if (e.target === feedbackModal) {
+            feedbackModal.classList.add("hidden");
+        }
+    });
+}
+
+// Join Contributor Modal Logic
+const joinContributorModal = document.getElementById("join-contributor-modal");
+const joinContributorLink = document.getElementById("join-contributor-link");
+const closeJoinContributorBtn = document.getElementById("close-join-contributor-modal-btn");
+
+if (joinContributorLink) {
+    joinContributorLink.onclick = function(e) {
+      e.preventDefault();
+      joinContributorModal.classList.remove("hidden");
+    }
+}
+
+if (closeJoinContributorBtn) {
+    closeJoinContributorBtn.onclick = function() {
+      joinContributorModal.classList.add("hidden");
+    }
+}
+
+// Close join contributor modal when clicking outside
+if (joinContributorModal) {
+    joinContributorModal.addEventListener('click', function(e) {
+        if (e.target === joinContributorModal) {
+            joinContributorModal.classList.add("hidden");
+        }
+    });
+}
