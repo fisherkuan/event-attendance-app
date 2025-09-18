@@ -197,11 +197,12 @@ app.get('/api/events', async (req, res) => {
 
         if (appConfig.events.autoFetch) {
             const calendarEvents = await fetchCalendarEvents();
+            const calendarEventIds = new Set(calendarEvents.map(e => e.id));
+
+            await client.query('BEGIN');
+
+            // Sync calendar events
             if (calendarEvents.length > 0) {
-                await client.query('BEGIN');
-                // Remove old calendar events
-                await client.query(`DELETE FROM events WHERE source = 'calendar'`);
-                // Insert new calendar events
                 for (const event of calendarEvents) {
                     await client.query(
                         `INSERT INTO events (id, title, date, endDate, description, location, source)
@@ -216,8 +217,19 @@ app.get('/api/events', async (req, res) => {
                         [event.id, event.title, event.date, event.endDate, event.description, event.location, event.source]
                     );
                 }
-                await client.query('COMMIT');
             }
+
+            // Remove deleted calendar events
+            const dbEventsResult = await client.query(`SELECT id FROM events WHERE source = 'calendar'`);
+            const dbEventIds = dbEventsResult.rows.map(row => row.id);
+
+            const staleEventIds = dbEventIds.filter(id => !calendarEventIds.has(id));
+
+            if (staleEventIds.length > 0) {
+                await client.query(`DELETE FROM events WHERE id = ANY($1::varchar[])`, [staleEventIds]);
+            }
+
+            await client.query('COMMIT');
         }
 
         let timeRangeFilter = '';
