@@ -328,7 +328,7 @@ app.post('/api/rsvp', async (req, res) => {
                 return res.status(400).json({ success: false, message: 'Attendee name is required to remove an RSVP' });
             }
             await client.query(
-                'DELETE FROM rsvps WHERE event_id = $1 AND attendee_name = $2 AND attendance = $3',
+                'DELETE FROM rsvps WHERE id IN (SELECT id FROM rsvps WHERE event_id = $1 AND attendee_name = $2 AND attendance = $3 LIMIT 1)',
                 [eventId, attendeeName, 'yes']
             );
         }
