@@ -19,12 +19,12 @@ app.use(bodyParser.urlencoded({ extended: true }));
 // Serve static files from public directory
 app.use(express.static(path.join(__dirname, '../public')));
 
+const isProduction = process.env.NODE_ENV === 'production';
+
 // Database connection
 const pool = new Pool({
     connectionString: process.env.DATABASE_URL,
-    ssl: {
-        rejectUnauthorized: false
-    }
+    ssl: isProduction ? { rejectUnauthorized: false } : false
 });
 
 // Load configuration
@@ -52,7 +52,8 @@ async function initializeDatabase() {
                 description TEXT,
                 location VARCHAR(255),
                 source VARCHAR(255),
-                endDate TIMESTAMPTZ
+                endDate TIMESTAMPTZ,
+                attendance_limit INTEGER
             );
         `);
 
@@ -308,7 +309,17 @@ app.post('/api/rsvp', async (req, res) => {
             return res.status(404).json({ success: false, message: 'Event not found' });
         }
 
+        const event = eventResult.rows[0];
+
         if (action === 'add') {
+            if (event.attendance_limit !== null) {
+                const rsvpsResult = await client.query('SELECT COUNT(*) FROM rsvps WHERE event_id = $1 AND attendance = $2', [eventId, 'yes']);
+                const attendingCount = parseInt(rsvpsResult.rows[0].count, 10);
+                if (attendingCount >= event.attendance_limit) {
+                    return res.status(400).json({ success: false, message: 'Event is full' });
+                }
+            }
+
             if (!attendeeName) {
                 return res.status(400).json({ success: false, message: 'Attendee name is required' });
             }
@@ -346,7 +357,7 @@ app.post('/api/rsvp', async (req, res) => {
 app.post('/api/events', async (req, res) => {
     const client = await pool.connect();
     try {
-        const { title, date, description, location } = req.body;
+        const { title, date, description, location, attendanceLimit } = req.body;
 
         if (!title || !date) {
             return res.status(400).json({ success: false, message: 'Title and date are required' });
@@ -357,12 +368,13 @@ app.post('/api/events', async (req, res) => {
             title,
             date,
             description: description || '',
-            location: location || ''
+            location: location || '',
+            attendanceLimit: attendanceLimit || null
         };
 
         await client.query(
-            'INSERT INTO events (id, title, date, description, location) VALUES ($1, $2, $3, $4, $5)',
-            [newEvent.id, newEvent.title, newEvent.date, newEvent.description, newEvent.location]
+            'INSERT INTO events (id, title, date, description, location, attendance_limit) VALUES ($1, $2, $3, $4, $5, $6)',
+            [newEvent.id, newEvent.title, newEvent.date, newEvent.description, newEvent.location, newEvent.attendanceLimit]
         );
 
         res.json({ success: true, message: 'Event created successfully', event: newEvent });
@@ -374,9 +386,55 @@ app.post('/api/events', async (req, res) => {
     }
 });
 
+// Update an event
+app.put('/api/events/:id', async (req, res) => {
+    const client = await pool.connect();
+    try {
+        const { id } = req.params;
+        const { title, date, description, location, attendanceLimit } = req.body;
+
+        if (!title || !date) {
+            return res.status(400).json({ success: false, message: 'Title and date are required' });
+        }
+
+        await client.query(
+            `UPDATE events 
+             SET title = $1, date = $2, description = $3, location = $4, attendance_limit = $5
+             WHERE id = $6`,
+            [title, date, description, location, attendanceLimit, id]
+        );
+
+        res.json({ success: true, message: 'Event updated successfully' });
+    } catch (error) {
+        console.error('Error updating event:', error);
+        res.status(500).json({ success: false, message: 'Internal server error' });
+    } finally {
+        client.release();
+    }
+});
+
+// Delete an event
+app.delete('/api/events/:id', async (req, res) => {
+    const client = await pool.connect();
+    try {
+        const { id } = req.params;
+        await client.query('DELETE FROM events WHERE id = $1', [id]);
+        res.json({ success: true, message: 'Event deleted successfully' });
+    } catch (error) {
+        console.error('Error deleting event:', error);
+        res.status(500).json({ success: false, message: 'Internal server error' });
+    } finally {
+        client.release();
+    }
+});
+
 // Health check endpoint
 app.get('/api/health', (req, res) => {
     res.json({ status: 'OK', timestamp: new Date().toISOString() });
+});
+
+app.get('/admin', (req, res) => {
+    res.sendFile(path.join(__dirname, '../public/admin.html'));
 });
 
 // Serve the main application for all other routes

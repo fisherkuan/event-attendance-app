@@ -118,17 +118,23 @@ function displayEvents() {
         if (event.attendees && event.attendees.length > 0) {
             attendanceInfo = event.attendees.join(', ');
         }
-        
+
+        const isFull = event.attendance_limit !== null && event.attendingCount >= event.attendance_limit;
+
+        let attendanceText = `${event.attendingCount} Attending`;
+        if (event.attendance_limit !== null) {
+            attendanceText += ` / ${event.attendance_limit}`;
+        }
 
         // Show different buttons based on whether it's a past or future event
-        const rsvpButtons = isPastEvent 
+        const rsvpButtons = isPastEvent
             ? '<div class="rsvp-disabled">Past Event - RSVP Closed</div>'
             : `
                 <div class="event-rsvp-buttons">
-                    <button class="rsvp-add-btn-small" onclick="submitRsvpDirect('${event.id}', 'add')">
-                        <span class="icon">＋</span>
+                    <button class="rsvp-add-btn-small ${isFull ? 'rsvp-full-btn' : ''}" onclick="submitRsvpDirect('${event.id}', 'add')" ${isFull ? 'disabled' : ''}>
+                        <span class="icon">${isFull ? 'Full' : '＋'}</span>
                     </button>
-                    <button class="rsvp-remove-btn-small" onclick="submitRsvpDirect('${event.id}', 'remove')">
+                    <button class="rsvp-remove-btn-small" onclick="submitRsvpDirect('${event.id}', 'remove')" ${event.attendingCount === 0 ? 'disabled' : ''}>
                         <span class="icon">－</span>
                     </button>
                 </div>
@@ -142,7 +148,7 @@ function displayEvents() {
                 ${event.location ? `<p class="event-location">📍 ${event.location}</p>` : ''}
                 <div class="event-footer">
                     <div class="attendance-info" title="${attendanceInfo}">
-                        <span>${event.attendingCount} Attending</span>
+                        <span>${attendanceText}</span>
                     </div>
                     ${rsvpButtons}
                 </div>

@@ -308,6 +308,14 @@ section h2 {
     box-shadow: 0 4px 12px rgba(72, 187, 120, 0.3);
 }
 
+.rsvp-full-btn {
+    background: #cbd5e0 !important;
+    color: #718096 !important;
+    cursor: not-allowed !important;
+    box-shadow: none !important;
+    transform: none !important;
+}
+
 .rsvp-remove-btn-small {
     background: linear-gradient(135deg, #f56565 0%, #e53e3e 100%);
     color: white;
@@ -699,6 +707,15 @@ footer {
     margin-top: 60px;
 }
 
+footer a {
+    color: #a0aec0;
+    text-decoration: none;
+}
+
+footer a:hover {
+    text-decoration: underline;
+}
+
 /* Utility classes */
 .hidden {
     display: none !important;
@@ -849,4 +866,45 @@ footer {
 
 #join-contributor-link:hover {
     text-decoration: underline;
+}
+
+.event-card-admin {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: #fff;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    padding: 24px;
+    margin-bottom: 16px;
+}
+
+.attendance-limit-form {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.attendance-limit-form input {
+    padding: 8px 12px;
+    border: 2px solid #e2e8f0;
+    border-radius: 6px;
+    font-size: 1rem;
+    width: 120px;
+}
+
+.attendance-limit-form button {
+    background: #667eea;
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 6px;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.attendance-limit-form button:hover {
+    background: #5a67d8;
 }
