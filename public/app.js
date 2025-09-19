@@ -56,7 +56,8 @@ async function loadConfig() {
 // Set up calendar based on configuration
 function setupCalendar() {
     const placeholder = document.getElementById('calendar-placeholder');
-    
+    const addToCalendarBtn = document.getElementById('add-to-calendar-btn');
+
     if (appConfig.calendar.enabled && appConfig.calendar.url) {
         placeholder.innerHTML = `
             <iframe src="${appConfig.calendar.url}" 
@@ -67,6 +68,21 @@ function setupCalendar() {
                     scrolling="no">
             </iframe>
         `;
+
+        // Extract calendar ID and create the "Add to Calendar" link
+        try {
+            const url = new URL(appConfig.calendar.url);
+            const calendarId = url.searchParams.get('src');
+            if (calendarId) {
+                const addToCalendarUrl = `https://www.google.com/calendar/render?cid=${calendarId}`;
+                addToCalendarBtn.href = addToCalendarUrl;
+                addToCalendarBtn.style.display = 'inline-block';
+            }
+        } catch (error) {
+            console.error('Error parsing calendar URL:', error);
+            addToCalendarBtn.style.display = 'none';
+        }
+
     } else {
         placeholder.innerHTML = `
             <div class="calendar-setup">
@@ -74,6 +90,7 @@ function setupCalendar() {
                 <p>Calendar integration is not configured. Please update the configuration file to enable calendar display.</p>
             </div>
         `;
+        addToCalendarBtn.style.display = 'none';
     }
 }
 

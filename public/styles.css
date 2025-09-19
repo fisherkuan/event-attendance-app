@@ -855,17 +855,34 @@ footer a:hover {
 }
 
 /* Join Contributor Link */
-#join-contributor-link {
+.calendar-actions {
+    display: flex;
+    gap: 16px;
+    margin-bottom: 24px;
+}
+
+#join-contributor-link,
+.calendar-btn {
     display: inline-block;
-    margin-top: -10px;
-    margin-bottom: 20px;
+    padding: 10px 20px;
     color: #667eea;
     text-decoration: none;
     font-weight: 600;
+    border: 2px solid #667eea;
+    border-radius: 8px;
+    transition: all 0.2s ease-in-out;
 }
 
-#join-contributor-link:hover {
-    text-decoration: underline;
+#join-contributor-link:hover,
+.calendar-btn:hover {
+    background-color: #667eea;
+    color: white;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+}
+
+.calendar-btn {
+    display: none; /* Initially hidden */
 }
 
 .event-card-admin {
@@ -925,3 +942,4 @@ footer a:hover {
 .refresh-btn:hover {
     transform: rotate(90deg);
 }
+
