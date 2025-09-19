@@ -267,6 +267,14 @@ function setupEventListeners() {
             closeRsvpModal();
         }
     });
+
+    // Refresh button
+    const refreshBtn = document.getElementById('refresh-events-btn');
+    if (refreshBtn) {
+        refreshBtn.addEventListener('click', function() {
+            loadEvents();
+        });
+    }
 }
 
 function submitRsvpDirect(eventId, action, attendeeName) {
