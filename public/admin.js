@@ -20,7 +20,14 @@ function displayEvents(events) {
         <div class="event-card-admin">
             <div>
                 <h3>${event.title}</h3>
-                <p>${new Date(event.date).toLocaleString()}</p>
+                <p>${new Date(event.date).toLocaleString('en-US', {
+                    weekday: 'long',
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                })}</p>
             </div>
             <div class="attendance-limit-form">
                 <input type="number" id="limit-${event.id}" value="${event.attendance_limit || ''}" placeholder="No limit" min="1">
