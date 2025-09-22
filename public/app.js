@@ -133,7 +133,7 @@ function displayEvents() {
 
         let attendanceInfo = '';
         if (event.attendees && event.attendees.length > 0) {
-            attendanceInfo = event.attendees.join(', ');
+            attendanceInfo = event.attendees.join('\n');
         }
 
         const isFull = event.attendance_limit !== null && event.attendingCount >= event.attendance_limit;
