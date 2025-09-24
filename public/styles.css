@@ -790,9 +790,7 @@ footer a:hover {
     .calendar-actions {
         gap: 10px;
     }
-}
 
-@media (max-width: 480px) {
     .container {
         padding: 0 16px;
     }

@@ -69,15 +69,40 @@ function setupCalendar() {
     const addToCalendarBtn = document.getElementById('add-to-calendar-btn');
 
     if (appConfig.calendar.enabled && appConfig.calendar.url) {
-        placeholder.innerHTML = `
-            <iframe src="${appConfig.calendar.url}" 
-                    style="border: 0" 
-                    width="100%" 
-                    height="600" 
-                    frameborder="0" 
-                    scrolling="no">
-            </iframe>
-        `;
+        const updateCalendarView = () => {
+            const isMobile = window.innerWidth < 768;
+            let calendarUrl = appConfig.calendar.url;
+
+            if (isMobile) {
+                // Replace mode=MONTH with mode=AGENDA for mobile view
+                if (calendarUrl.includes('mode=MONTH')) {
+                    calendarUrl = calendarUrl.replace('mode=MONTH', 'mode=AGENDA');
+                } else if (!calendarUrl.includes('mode=AGENDA')) {
+                    calendarUrl += '&mode=AGENDA';
+                }
+            } else {
+                // Ensure it's month view on desktop
+                if (calendarUrl.includes('mode=AGENDA')) {
+                    calendarUrl = calendarUrl.replace('mode=AGENDA', 'mode=MONTH');
+                }
+            }
+
+            placeholder.innerHTML = `
+                <iframe src="${calendarUrl}" 
+                        style="border: 0" 
+                        width="100%" 
+                        height="600" 
+                        frameborder="0" 
+                        scrolling="no">
+                </iframe>
+            `;
+        };
+
+        // Initial setup
+        updateCalendarView();
+
+        // Update on resize
+        window.addEventListener('resize', updateCalendarView);
 
         // Extract calendar ID and create the "Add to Calendar" link
         try {
