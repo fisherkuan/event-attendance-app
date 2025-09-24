@@ -773,8 +773,22 @@ footer a:hover {
         gap: 8px;
     }
     
+    .calendar-actions {
+        flex-direction: column;
+    }
+
     #calendar-container iframe {
         height: 400px;
+    }
+}
+
+@media (max-width: 480px) {
+    section {
+        padding: 20px 15px;
+    }
+
+    .calendar-actions {
+        gap: 10px;
     }
 }
 
