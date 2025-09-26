@@ -1,7 +1,7 @@
 
 {
   "name": "Taiwanese Leuven SportsCenter",
-  "short_name": "TLS",
+  "short_name": "TLSC",
   "start_url": "/index.html",
   "display": "standalone",
   "background_color": "#ffffff",

@@ -327,6 +327,17 @@ function setupEventListeners() {
             loadEvents();
         });
     }
+
+    // Donate and Subscribe buttons
+    const donateBtn = document.getElementById('donate-btn');
+    if (donateBtn) {
+        donateBtn.addEventListener('click', donate);
+    }
+
+    const subscribeBtn = document.getElementById('subscribe-btn');
+    if (subscribeBtn) {
+        subscribeBtn.addEventListener('click', subscribe);
+    }
 }
 
 function submitRsvpDirect(eventId, action, attendeeName) {
@@ -352,6 +363,52 @@ function submitRsvpDirect(eventId, action, attendeeName) {
     if (action === 'add') {
         openRsvpModal(eventId);
         return;
+    }
+}
+
+async function donate() {
+    try {
+        const keyResponse = await fetch(`${API_BASE_URL}/api/stripe-key`);
+        const { publicKey } = await keyResponse.json();
+        const stripe = Stripe(publicKey);
+
+        const response = await fetch(`${API_BASE_URL}/api/create-donation-checkout-session`, {
+            method: 'POST',
+        });
+        const session = await response.json();
+        const result = await stripe.redirectToCheckout({
+            sessionId: session.id,
+        });
+
+        if (result.error) {
+            alert(result.error.message);
+        }
+    } catch (error) {
+        console.error('Error creating checkout session:', error);
+        alert('Error creating checkout session. Please try again.');
+    }
+}
+
+async function subscribe() {
+    try {
+        const keyResponse = await fetch(`${API_BASE_URL}/api/stripe-key`);
+        const { publicKey } = await keyResponse.json();
+        const stripe = Stripe(publicKey);
+
+        const response = await fetch(`${API_BASE_URL}/api/create-subscription-checkout-session`, {
+            method: 'POST',
+        });
+        const session = await response.json();
+        const result = await stripe.redirectToCheckout({
+            sessionId: session.id,
+        });
+
+        if (result.error) {
+            alert(result.error.message);
+        }
+    } catch (error) {
+        console.error('Error creating checkout session:', error);
+        alert('Error creating checkout session. Please try again.');
     }
 }
 

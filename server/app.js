@@ -27,6 +27,8 @@ const pool = new Pool({
     ssl: isProduction ? { rejectUnauthorized: false } : false
 });
 
+const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
+
 // Load configuration
 let appConfig = {};
 try {
@@ -189,6 +191,48 @@ app.get('/api/config', (req, res) => {
     }
 });
 
+app.get('/api/stripe-key', (req, res) => {
+    res.json({ publicKey: process.env.STRIPE_PUBLISHABLE_KEY });
+});
+
+// Get donation progress
+app.get('/api/donation-progress', (req, res) => {
+    res.json({ current: 600, goal: 1000 });
+});
+
+app.post('/api/create-donation-checkout-session', async (req, res) => {
+    const session = await stripe.checkout.sessions.create({
+        line_items: [
+            {
+                price: 'price_1SBB7vJ3tr3bCJWSejLYC3TQ',
+                quantity: 1,
+            },
+        ],
+        mode: 'payment',
+        submit_type: 'donate',
+        success_url: `${req.headers.origin}?session_id={CHECKOUT_SESSION_ID}`,
+        cancel_url: `${req.headers.origin}`,
+    });
+
+    res.json({ id: session.id });
+});
+
+app.post('/api/create-subscription-checkout-session', async (req, res) => {
+    const session = await stripe.checkout.sessions.create({
+        line_items: [
+            {
+                price: 'price_1SBcLuJ3tr3bCJWS8qI4aPDz',
+                quantity: 1,
+            },
+        ],
+        mode: 'subscription',
+        success_url: `${req.headers.origin}?session_id={CHECKOUT_SESSION_ID}`,
+        cancel_url: `${req.headers.origin}`,
+    });
+
+    res.json({ id: session.id });
+});
+
 // Get all events
 app.get('/api/events', async (req, res) => {
     const client = await pool.connect();
@@ -285,8 +329,6 @@ app.get('/api/events/:id', async (req, res) => {
     } catch (error) {
         console.error('Error fetching event:', error);
         res.status(500).json({ error: 'Failed to fetch event' });
-    } finally {
-        client.release();
     }
 });
 
@@ -408,8 +450,6 @@ app.put('/api/events/:id', async (req, res) => {
     } catch (error) {
         console.error('Error updating event:', error);
         res.status(500).json({ success: false, message: 'Internal server error' });
-    } finally {
-        client.release();
     }
 });
 

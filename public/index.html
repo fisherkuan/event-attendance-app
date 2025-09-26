@@ -7,13 +7,28 @@
     <link rel="stylesheet" href="styles.css">
     <link rel="manifest" href="manifest.json">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
-    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='M8 2v4'/><path d='M16 2v4'/><rect x='3' y='4' width='18' height='18' rx='2'/><path d='M3 10h18'/><path d='m9 16 2 2 4-4'/></svg>"></head>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='M8 2v4'/><path d='M16 2v4'/><rect x='3' y='4' width='18' height='18' rx='2'/><path d='M3 10h18'/><path d='m9 16 2 2 4-4'/></svg>">
+    <script src="https://js.stripe.com/v3/"></script>
+</head>
 <body>
-    <div class="container">
         <header class="app-header">
-            <h1>Taiwanese Leuven SportsCenter</h1>
-            <p>Sports event calendar and RSVP system</p>
-        </header>
+        <h1>Taiwanese Leuven SportsCenter RSVP App</h1>
+        <div class="support-header">
+            <p>Hosting this web app costs money—your support keeps it running.</p>
+            <p>All donations go directly to operating expenses.</p>
+            <div class="support-buttons">
+                <button id="donate-btn" class="support-btn">
+                    <img src="icons/one-time-donation.png" alt="Donate" class="btn-icon">
+                    Donate
+                </button>
+                <button id="subscribe-btn" class="support-btn">
+                    <img src="icons/recurring-donation.png" alt="Subscribe" class="btn-icon">
+                    Donate Monthly
+                </button>
+            </div>
+        </div>
+    </header>
+    <div class="container">
 
         <main>
             <!-- Google Calendar Integration Section -->
@@ -149,10 +164,11 @@
             </div>
         </div>
 
+</div>
+
         <footer>
             <p>&copy; Built by Fisher Kuan</p>
         </footer>
-    </div>
 
     <!-- Scripts -->
     <script src="app.js"></script>
