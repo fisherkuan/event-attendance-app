@@ -1,4 +1,4 @@
-const CACHE_NAME = 'event-attendance-app-cache-v2';
+const CACHE_NAME = 'event-attendance-app-cache-v3'; // Bumped version
 const urlsToCache = [
   '/',
   '/index.html',
@@ -6,7 +6,9 @@ const urlsToCache = [
   '/app.js',
   '/manifest.json',
   '/icons/icon-192x192.png',
-  '/icons/icon-512x512.png'
+  '/icons/icon-512x512.png',
+  '/icons/one-time-donation.png',
+  '/icons/recurring-donation.png'
 ];
 
 self.addEventListener('install', event => {
@@ -16,6 +18,7 @@ self.addEventListener('install', event => {
         console.log('Opened cache');
         return cache.addAll(urlsToCache);
       })
+      .then(() => self.skipWaiting()) // Force activation
   );
 });
 
@@ -30,20 +33,25 @@ self.addEventListener('activate', event => {
           }
         })
       );
-    })
+    }).then(() => self.clients.claim()) // Take control of open clients
   );
 });
 
 self.addEventListener('fetch', event => {
-  event.respondWith(
-    caches.open(CACHE_NAME).then(cache => {
-      return cache.match(event.request).then(response => {
-        const fetchPromise = fetch(event.request).then(networkResponse => {
-          cache.put(event.request, networkResponse.clone());
-          return networkResponse;
-        });
-        return response || fetchPromise;
-      });
-    })
-  );
+    // Stale-while-revalidate for all requests
+    event.respondWith(
+        caches.open(CACHE_NAME).then(cache => {
+            return cache.match(event.request).then(response => {
+                const fetchPromise = fetch(event.request).then(networkResponse => {
+                    // Check if we received a valid response
+                    if (networkResponse && networkResponse.status === 200) {
+                        cache.put(event.request, networkResponse.clone());
+                    }
+                    return networkResponse;
+                });
+                // Return the cached response immediately, and the fetch promise will update the cache in the background.
+                return response || fetchPromise;
+            });
+        })
+    );
 });
