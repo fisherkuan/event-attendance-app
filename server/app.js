@@ -36,7 +36,7 @@ try {
 } catch (error) {
     console.error('Error loading config file:', error);
     appConfig = {
-        calendar: { url: '', enabled: false },
+        calendars: [],
         events: { autoFetch: false, defaultTimeRange: 'future', refreshInterval: 300000 },
         rsvp: { allowAnonymous: false, requireName: true }
     };
@@ -78,103 +78,93 @@ async function initializeDatabase() {
 
 // Function to fetch events from Google Calendar
 async function fetchCalendarEvents() {
-    if (!appConfig.calendar.enabled || !appConfig.calendar.url) {
+    if (!appConfig.calendars || appConfig.calendars.length === 0) {
         return [];
     }
 
+    let allEvents = [];
     try {
-        // Extract calendar ID from the URL
-        let calendarId = null;
-        const calendarUrl = appConfig.calendar.url;
-        
-        if (calendarUrl.includes('src=')) {
-            // Typical embed URL: ...src=calendarId...
-            const match = calendarUrl.match(/src=([^&]+)/);
-            if (match) calendarId = decodeURIComponent(match[1]);
-        } else if (calendarUrl.includes('calendar.google.com/calendar/ical/')) {
-            // Direct iCal link
-            const match = calendarUrl.match(/ical\/([^\/]+)\//);
-            if (match) calendarId = decodeURIComponent(match[1]);
-        } else {
-            // Try to extract from other formats
-            const match = calendarUrl.match(/calendar\/([^\/?&]+)/);
-            if (match) calendarId = decodeURIComponent(match[1]);
-        }
+        for (const calendarEntry of appConfig.calendars) {
+            if (!calendarEntry.enabled) {
+                continue;
+            }
+            const calendarUrl = calendarEntry.url;
+            let calendarId = null;
+            if (calendarUrl.includes('src=')) {
+                const match = calendarUrl.match(/src=([^&]+)/);
+                if (match) calendarId = decodeURIComponent(match[1]);
+            } else if (calendarUrl.includes('calendar.google.com/calendar/ical/')) {
+                const match = calendarUrl.match(/ical\/([^\/]+)\//);
+                if (match) calendarId = decodeURIComponent(match[1]);
+            } else {
+                const match = calendarUrl.match(/calendar\/([^\/?&]+)/);
+                if (match) calendarId = decodeURIComponent(match[1]);
+            }
 
-        if (!calendarId) {
-            console.warn('Could not extract calendar ID from URL');
-            return [];
-        }
+            if (!calendarId) {
+                console.warn(`Could not extract calendar ID from URL: ${calendarUrl}`);
+                continue;
+            }
 
-        // Construct the public iCal feed URL
-        const icalUrl = `https://calendar.google.com/calendar/ical/${encodeURIComponent(calendarId)}/public/basic.ics`;
+            const icalUrl = `https://calendar.google.com/calendar/ical/${encodeURIComponent(calendarId)}/public/basic.ics`;
+            const response = await fetch(icalUrl);
+            if (!response.ok) {
+                console.error(`Error fetching calendar from ${icalUrl}: HTTP ${response.status}: ${response.statusText}`);
+                continue;
+            }
+            
+            const icsText = await response.text();
+            const veventBlocks = icsText.split('BEGIN:VEVENT').slice(1);
+            
+            for (const block of veventBlocks) {
+                const summaryMatch = block.match(/SUMMARY:(.*)/);
+                const dtstartMatch = block.match(/DTSTART(?:;[^:]+)?:([0-9T]+)/);
+                const dtendMatch = block.match(/DTEND(?:;[^:]+)?:([0-9T]+)/);
+                const descMatch = block.match(/DESCRIPTION:(.*)/);
+                const locMatch = block.match(/LOCATION:(.*)/);
+                const uidMatch = block.match(/UID:(.*)/);
 
-        const response = await fetch(icalUrl);
-        if (!response.ok) {
-            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-        }
-        
-        const icsText = await response.text();
-        
-        // Parse the iCal data (very basic parser for VEVENTs)
-        const events = [];
-        const veventBlocks = icsText.split('BEGIN:VEVENT').slice(1);
-        
-        for (const block of veventBlocks) {
-            const summaryMatch = block.match(/SUMMARY:(.*)/);
-            const dtstartMatch = block.match(/DTSTART(?:;[^:]+)?:([0-9T]+)/);
-            const dtendMatch = block.match(/DTEND(?:;[^:]+)?:([0-9T]+)/);
-            const descMatch = block.match(/DESCRIPTION:(.*)/);
-            const locMatch = block.match(/LOCATION:(.*)/);
-            const uidMatch = block.match(/UID:(.*)/);
-
-            if (summaryMatch && dtstartMatch && uidMatch) {
-                // Convert date string to ISO
-                let start = dtstartMatch[1];
-                
-                if (start.length === 8) {
-                    // Format: YYYYMMDD
-                    start = `${start.slice(0,4)}-${start.slice(4,6)}-${start.slice(6,8)}T00:00:00Z`;
-                } else if (start.length === 15 && start.endsWith('Z')) {
-                    // Format: YYYYMMDDTHHMMSSZ
-                    start = `${start.slice(0,4)}-${start.slice(4,6)}-${start.slice(6,8)}T${start.slice(9,11)}:${start.slice(11,13)}:${start.slice(13,15)}Z`;
-                } else if (start.length === 15 && start.includes('T')) {
-                    // Format: YYYYMMDDTHHMMSS (without Z)
-                    start = `${start.slice(0,4)}-${start.slice(4,6)}-${start.slice(6,8)}T${start.slice(9,11)}:${start.slice(11,13)}:${start.slice(13,15)}Z`;
-                } else {
-                    continue; // Skip this event if we can't parse the date
-                }
-
-                let end = dtendMatch ? dtendMatch[1] : null;
-                if (end) {
-                    if (end.length === 8) {
-                        end = `${end.slice(0,4)}-${end.slice(4,6)}-${end.slice(6,8)}T00:00:00Z`;
-                    } else if (end.length === 15 && end.endsWith('Z')) {
-                        end = `${end.slice(0,4)}-${end.slice(4,6)}-${end.slice(6,8)}T${end.slice(9,11)}:${end.slice(11,13)}:${end.slice(13,15)}Z`;
-                    } else if (end.length === 15 && end.includes('T')) {
-                        end = `${end.slice(0,4)}-${end.slice(4,6)}-${end.slice(6,8)}T${end.slice(9,11)}:${end.slice(11,13)}:${end.slice(13,15)}Z`;
+                if (summaryMatch && dtstartMatch && uidMatch) {
+                    let start = dtstartMatch[1];
+                    if (start.length === 8) {
+                        start = `${start.slice(0,4)}-${start.slice(4,6)}-${start.slice(6,8)}T00:00:00Z`;
+                    } else if (start.length === 15 && start.endsWith('Z')) {
+                        start = `${start.slice(0,4)}-${start.slice(4,6)}-${start.slice(6,8)}T${start.slice(9,11)}:${start.slice(11,13)}:${start.slice(13,15)}Z`;
+                    } else if (start.length === 15 && start.includes('T')) {
+                        start = `${start.slice(0,4)}-${start.slice(4,6)}-${start.slice(6,8)}T${start.slice(9,11)}:${start.slice(11,13)}:${start.slice(13,15)}Z`;
+                    } else {
+                        continue;
                     }
-                }
 
-                // Use the UID as the stable event ID
-                const eventId = `cal-${uidMatch[1]}`.trim();
-                
-                events.push({
-                    id: eventId,
-                    title: summaryMatch[1].replace(/\n/g, '\n').trim(),
-                    date: start,
-                    endDate: end,
-                    description: descMatch ? descMatch[1].replace(/\n/g, '\n').trim() : '',
-                    location: locMatch ? locMatch[1].replace(/\n/g, '\n').trim() : '',
-                    source: 'calendar'
-                });
+                    let end = dtendMatch ? dtendMatch[1] : null;
+                    if (end) {
+                        if (end.length === 8) {
+                            end = `${end.slice(0,4)}-${end.slice(4,6)}-${end.slice(6,8)}T00:00:00Z`;
+                        } else if (end.length === 15 && end.endsWith('Z')) {
+                            end = `${end.slice(0,4)}-${end.slice(4,6)}-${end.slice(6,8)}T${end.slice(9,11)}:${end.slice(11,13)}:${end.slice(13,15)}Z`;
+                        } else if (end.length === 15 && end.includes('T')) {
+                            end = `${end.slice(0,4)}-${end.slice(4,6)}-${end.slice(6,8)}T${end.slice(9,11)}:${end.slice(11,13)}:${end.slice(13,15)}Z`;
+                        }
+                    }
+
+                    const eventId = `cal-${uidMatch[1]}`.trim();
+                    
+                    allEvents.push({
+                        id: eventId,
+                        title: summaryMatch[1].replace(/\n/g, '\n').trim(),
+                        date: start,
+                        endDate: end,
+                        description: descMatch ? descMatch[1].replace(/\n/g, '\n').trim() : '',
+                        location: locMatch ? locMatch[1].replace(/\n/g, '\n').trim() : '',
+                        source: calendarId
+                    });
+                }
             }
         }
-
-        return events;
+        return allEvents;
     } catch (error) {
         console.error('Error fetching calendar events:', error);
-        return [];
+        return allEvents;
     }
 }
 
@@ -217,21 +207,7 @@ app.post('/api/create-donation-checkout-session', async (req, res) => {
     res.json({ id: session.id });
 });
 
-app.post('/api/create-subscription-checkout-session', async (req, res) => {
-    const session = await stripe.checkout.sessions.create({
-        line_items: [
-            {
-                price: 'price_1SBcLuJ3tr3bCJWS8qI4aPDz',
-                quantity: 1,
-            },
-        ],
-        mode: 'subscription',
-        success_url: `${req.headers.origin}?session_id={CHECKOUT_SESSION_ID}`,
-        cancel_url: `${req.headers.origin}`,
-    });
 
-    res.json({ id: session.id });
-});
 
 // Get all events
 app.get('/api/events', async (req, res) => {

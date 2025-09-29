@@ -6,36 +6,46 @@
     <title>Taiwanese Leuven SportsCenter</title>
     <link rel="stylesheet" href="styles.css">
     <link rel="manifest" href="manifest.json">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
-    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='M8 2v4'/><path d='M16 2v4'/><rect x='3' y='4' width='18' height='18' rx='2'/><path d='M3 10h18'/><path d='m9 16 2 2 4-4'/></svg>">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='M8 2v4'/><path d='M16 2v4'/><rect x='3' y='4' width='18' height='18' rx='2'/><path d='M3 10h18'/><path d='m9 16 2 2 4-4'/></svg'>">
     <script src="https://js.stripe.com/v3/"></script>
 </head>
 <body>
+<div class="container">
 <header class="app-header">
-        <h1>Taiwanese Leuven SportsCenter</h1>
-        <p>Sports event calendar and RSVP system</p>
-    </header>
-    <div class="container">
+    <h1>Taiwanese Leuven Calendar</h1>
+    <p>Discover upcoming events and RSVP to join the fun!</p>
+</header>
 
-        <main>
-            <!-- Google Calendar Integration Section -->
-            <section class="calendar-section">
-                <h2>Calendar</h2>
-                <div class="calendar-actions">
-                    <a href="#" id="join-contributor-link">Join as a calendar contributor</a>
-                    <a href="#" id="add-to-calendar-btn" class="calendar-btn" target="_blank">Add to my Google Calendar</a>
-                </div>
-                <div id="calendar-container">
-                    <!-- Google Calendar iframe will be inserted here -->
-                    <div id="calendar-placeholder">
-                        <p>Loading calendar...</p>
+    <main>
+        <!-- Google Calendar Integration Section -->
+        <section class="calendar-section">
+            <h2>Calendar</h2>
+            <div class="calendar-actions">
+                <div class="dropdown">
+                    <button class="calendar-action-btn" title="Add to Google Calendar">
+                        <img src="icons/add.png" alt="Add to Google Calendar">
+                    </button>
+                    <div class="dropdown-content" id="add-to-calendar-dropdown">
+                        <!-- Links will be populated dynamically -->
                     </div>
                 </div>
-            </section>
+                <a href="#" id="join-group-link" class="calendar-action-btn" title="Join group to add events">
+                    <img src="icons/join.png" alt="Join group to add events">
+                </a>
+            </div>
+            <div id="calendar-container">
+                <!-- Google Calendar iframe will be inserted here -->
+                <div id="calendar-placeholder">
+                    <p>Loading calendar...</p>
+                </div>
+            </div>
+        </section>
 
-            <!-- Events List Section -->
-            <section class="events-section">
-                <h2>Events <span id="refresh-events-btn" class="refresh-btn"></span></h2>
+        <!-- Events List Section -->
+        <section class="events-section">
+            <h2>Events <span id="refresh-events-btn" class="refresh-btn"></span></h2>
+            <div class="event-filters">
                 <div class="time-range-selector">
                     <label for="time-range">Show events:</label>
                     <select id="time-range" onchange="loadEvents()">
@@ -44,132 +54,108 @@
                         <option value="all">All Events</option>
                     </select>
                 </div>
-                <div id="events-list">
-                    <!-- Events will be populated dynamically -->
-                    <div class="loading">Loading events...</div>
-                </div>
-            </section>
-
-            <!-- RSVP Modal -->
-            <div id="rsvp-modal" class="modal hidden">
-                <div class="modal-content">
-                    <div class="modal-header">
-                        <h3>RSVP for Event</h3>
-                        <button class="close-btn" onclick="closeRsvpModal()">&times;</button>
-                    </div>
-                    <div class="modal-body">
-                        <div id="event-details">
-                            <h4 id="modal-event-title">Event Title</h4>
-                            <p id="modal-event-date">Event Date</p>
-                            <p id="modal-event-description">Event Description</p>
-                        </div>
-                        
-                        <div class="rsvp-actions">
-                            <div class="form-group">
-                                <label for="attendee-name">Your Name</label>
-                                <input type="text" id="attendee-name" placeholder="Enter your name">
-                            </div>
-                            
-                            <div class="rsvp-buttons">
-                                <button class="rsvp-add-btn" onclick="submitRsvp('add')">
-                                    <span class="text">Confirm</span>
-                                </button>
-                            </div>
-                            
-                            <div class="form-actions">
-                                <button type="button" onclick="closeRsvpModal()">Cancel</button>
-                            </div>
-                        </div>
-                    </div>
+                <div class="calendar-filter-container">
+                    <!-- Content will be populated dynamically by JavaScript -->
                 </div>
             </div>
-
-            <!-- Remove RSVP Modal -->
-            <div id="remove-rsvp-modal" class="modal hidden">
-                <div class="modal-content">
-                    <div class="modal-header">
-                        <h3>Remove RSVP</h3>
-                        <button class="close-btn" onclick="closeRemoveRsvpModal()">&times;</button>
-                    </div>
-                    <div class="modal-body">
-                        <div id="event-details">
-                            <h4 id="remove-modal-event-title">Event Title</h4>
-                            <p id="remove-modal-event-date">Event Date</p>
-                        </div>
-                        
-                        <div class="rsvp-actions">
-                            <div class="form-group">
-                                <label for="attendee-to-remove">Select Attendee to Remove</label>
-                                <select id="attendee-to-remove"></select>
-                            </div>
-                            
-                            <div class="rsvp-buttons">
-                                <button class="rsvp-remove-btn" onclick="submitRemoveRsvp()">
-                                    <span class="text">Confirm</span>
-                                </button>
-                            </div>
-                            
-                            <div class="form-actions">
-                                <button type="button" onclick="closeRemoveRsvpModal()">Cancel</button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+            <div id="events-list">
+                <!-- Events will be populated dynamically -->
+                <div class="loading">Loading events...</div>
             </div>
+        </section>
 
-            
-        </main>
-
-        
-
-        <!-- Feedback Button -->
-        <button id="feedback-btn" class="feedback-btn">?</button>
-
-        <!-- Feedback Modal -->
-        <div id="feedback-modal" class="modal hidden">
-            <div class="modal-content feedback-modal-content">
-                <div class="modal-header">
-                    <button id="close-feedback-modal-btn" class="close-btn">&times;</button>
-                </div>
-                <div class="modal-body feedback-modal-body">
-                    <iframe src="https://docs.google.com/forms/d/e/1FAIpQLScEcmD-j6pd9U9q323nQT5xMf2G8AW2X4GkUAlGOr89ZlNwGg/viewform?embedded=true" frameborder="0" marginheight="0" marginwidth="0">Loading…</iframe>
-                </div>
-            </div>
-        </div>
-
-        <!-- Join Contributor Modal -->
-        <div id="join-contributor-modal" class="modal hidden">
+        <!-- RSVP Modal -->
+        <div id="rsvp-modal" class="modal hidden">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h3>Join as a Calendar Contributor</h3>
-                    <button id="close-join-contributor-modal-btn" class="close-btn">&times;</button>
+                    <h3>RSVP for Event</h3>
+                    <button class="close-btn" onclick="closeRsvpModal()">&times;</button>
                 </div>
                 <div class="modal-body">
-                    <p style="margin-bottom: 15px;">Please fill out this form to request to become a calendar contributor.</p>
-                    <iframe src="https://docs.google.com/forms/d/e/1FAIpQLScCtCTIywAHHGDyExtiTxw-exz_KkKB2rzjPl3et31iBzR7SQ/viewform?embedded=true" width="100%" height="618" frameborder="0" marginheight="0" marginwidth="0">Loading…</iframe>
+                    <div id="event-details">
+                        <h4 id="modal-event-title">Event Title</h4>
+                        <p id="modal-event-date">Event Date</p>
+                        <p id="modal-event-description">Event Description</p>
+                    </div>
+                    
+                    <div class="rsvp-actions">
+                        <div class="form-group">
+                            <label for="attendee-name">Your Name</label>
+                            <input type="text" id="attendee-name" placeholder="Enter your name">
+                        </div>
+                        
+                        <div class="rsvp-buttons">
+                            <button class="rsvp-add-btn" onclick="submitRsvp('add')">
+                                <span class="text">Confirm</span>
+                            </button>
+                        </div>
+                        
+                        <div class="form-actions">
+                            <button type="button" onclick="closeRsvpModal()">Cancel</button>
+                        </div>
+                    </div>
                 </div>
             </div>
+
+        <!-- Remove RSVP Modal -->
+        <div id="remove-rsvp-modal" class="modal hidden">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3>Remove RSVP</h3>
+                    <button class="close-btn" onclick="closeRemoveRsvpModal()">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <div id="event-details">
+                        <h4 id="remove-modal-event-title">Event Title</h4>
+                        <p id="remove-modal-event-date">Event Date</p>
+                    </div>
+                    
+                    <div class="rsvp-actions">
+                        <div class="form-group">
+                            <label for="attendee-to-remove">Select Attendee to Remove</label>
+                            <select id="attendee-to-remove"></select>
+                        </div>
+                        
+                        <div class="rsvp-buttons">
+                            <button class="rsvp-remove-btn" onclick="submitRemoveRsvp()">
+                                <span class="text">Confirm</span>
+                            </button>
+                        </div>
+                        
+                        <div class="form-actions">
+                            <button type="button" onclick="closeRemoveRsvpModal()">Cancel</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        
+    </main>
+
+    
+
+            <!-- Feedback Button -->
+            <a href="/instructions.html" id="feedback-btn" class="feedback-btn">?</a>
+    
+    <div class="bottom-banner">
+        <div class="container">
+            <div class="support-buttons">
+                <button id="donate-btn" class="support-btn">
+                    <img src="icons/one-time-donation.png" alt="Donate" class="btn-icon">
+                    Donate
+                </button>
+                <button id="report-issue-btn" class="support-btn">
+                    <img src="icons/bug.png" alt="Report Issue" class="btn-icon">
+                    Report Issue
+                </button>
+            </div>        <div class="support-header">
+            <p>Hosting this web app costs money—your support keeps it running.</p>
+            <p>All donations go directly to operating expenses.</p>
         </div>
-
+        <p class="copyright">&copy; Built by Fisher Kuan</p>
+    </div>
 </div>
-
-<div class="bottom-banner">
-    <div class="support-buttons">
-        <button id="donate-btn" class="support-btn">
-            <img src="icons/one-time-donation.png" alt="Donate" class="btn-icon">
-            Donate
-        </button>
-        <button id="subscribe-btn" class="support-btn">
-            <img src="icons/recurring-donation.png" alt="Subscribe" class="btn-icon">
-            Donate Monthly
-        </button>
-    </div>
-    <div class="support-header">
-        <p>Hosting this web app costs money—your support keeps it running.</p>
-        <p>All donations go directly to operating expenses.</p>
-    </div>
-    <p class="copyright">&copy; Built by Fisher Kuan</p>
-    </div>
+</div>
 
     <!-- Scripts -->
     <script src="app.js"></script>

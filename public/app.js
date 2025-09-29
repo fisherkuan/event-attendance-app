@@ -38,6 +38,9 @@ function initializeApp() {
         // Set up calendar integration
         setupCalendar();
         
+        // Populate calendar filter
+        populateCalendarFilter();
+
         // Load events
         loadEvents();
         
@@ -56,7 +59,7 @@ async function loadConfig() {
     } catch (error) {
         console.error('Error loading configuration:', error);
         appConfig = {
-            calendar: { url: '', enabled: false },
+            calendars: [],
             events: { autoFetch: false, defaultTimeRange: 'future' },
             rsvp: { requireName: true }
         };
@@ -68,27 +71,46 @@ function setupCalendar() {
     const placeholder = document.getElementById('calendar-placeholder');
     const addToCalendarBtn = document.getElementById('add-to-calendar-btn');
 
-    if (appConfig.calendar.enabled && appConfig.calendar.url) {
+    if (appConfig.calendars && appConfig.calendars.length > 0) {
         const updateCalendarView = () => {
             const isMobile = window.innerWidth < 768;
-            let calendarUrl = appConfig.calendar.url;
+            let baseCalendarUrl = "https://calendar.google.com/calendar/embed?height=600&wkst=1&ctz=Europe%2FBrussels&showPrint=0&showTitle=0";
+            let srcParams = "";
+            let colors = ["%237986cb", "%23b39ddb", "%23f6bf26"]; // Example colors, can be expanded or configured
+
+            appConfig.calendars.forEach((calendarEntry, index) => {
+                if (calendarEntry.enabled) {
+                    try {
+                        const u = new URL(calendarEntry.url);
+                        const src = u.searchParams.get('src');
+                        if (src) {
+                            srcParams += `&src=${src}`;
+                            if (colors[index]) {
+                                srcParams += `&color=${colors[index]}`;
+                            }
+                        }
+                    } catch (error) {
+                        console.error('Error parsing individual calendar URL:', calendarEntry.url, error);
+                    }
+                }
+            });
+
+            let finalCalendarUrl = `${baseCalendarUrl}${srcParams}`;
 
             if (isMobile) {
-                // Replace mode=MONTH with mode=AGENDA for mobile view
-                if (calendarUrl.includes('mode=MONTH')) {
-                    calendarUrl = calendarUrl.replace('mode=MONTH', 'mode=AGENDA');
-                } else if (!calendarUrl.includes('mode=AGENDA')) {
-                    calendarUrl += '&mode=AGENDA';
+                if (!finalCalendarUrl.includes('mode=AGENDA')) {
+                    finalCalendarUrl += '&mode=AGENDA';
                 }
             } else {
-                // Ensure it's month view on desktop
-                if (calendarUrl.includes('mode=AGENDA')) {
-                    calendarUrl = calendarUrl.replace('mode=AGENDA', 'mode=MONTH');
+                if (finalCalendarUrl.includes('mode=AGENDA')) {
+                    finalCalendarUrl = finalCalendarUrl.replace('mode=AGENDA', 'mode=MONTH');
+                } else if (!finalCalendarUrl.includes('mode=MONTH')) {
+                    finalCalendarUrl += '&mode=MONTH';
                 }
             }
 
             placeholder.innerHTML = `
-                <iframe src="${calendarUrl}" 
+                <iframe src="${finalCalendarUrl}" 
                         style="border: 0" 
                         width="100%" 
                         height="600" 
@@ -104,18 +126,30 @@ function setupCalendar() {
         // Update on resize
         window.addEventListener('resize', updateCalendarView);
 
-        // Extract calendar ID and create the "Add to Calendar" link
-        try {
-            const url = new URL(appConfig.calendar.url);
-            const calendarId = url.searchParams.get('src');
-            if (calendarId) {
-                const addToCalendarUrl = `https://www.google.com/calendar/render?cid=${calendarId}`;
-                addToCalendarBtn.href = addToCalendarUrl;
-                addToCalendarBtn.style.display = 'inline-block';
-            }
-        } catch (error) {
-            console.error('Error parsing calendar URL:', error);
-            addToCalendarBtn.style.display = 'none';
+        const joinGroupLink = document.getElementById('join-group-link');
+        if (joinGroupLink && appConfig.joinGroupUrl) {
+            joinGroupLink.href = appConfig.joinGroupUrl;
+        }
+
+        const addToCalendarDropdown = document.getElementById('add-to-calendar-dropdown');
+        if (addToCalendarDropdown) {
+            appConfig.calendars.forEach(calendar => {
+                if (calendar.enabled) {
+                    try {
+                        const u = new URL(calendar.url);
+                        const calendarId = u.searchParams.get('src');
+                        if (calendarId) {
+                            const link = document.createElement('a');
+                            link.href = `https://www.google.com/calendar/render?cid=${calendarId}`;
+                            link.textContent = calendar.name;
+                            link.target = '_blank';
+                            addToCalendarDropdown.appendChild(link);
+                        }
+                    } catch (error) {
+                        console.error('Error parsing calendar URL for Add to Calendar button:', error);
+                    }
+                }
+            });
         }
 
     } else {
@@ -125,10 +159,46 @@ function setupCalendar() {
                 <p>Calendar integration is not configured. Please update the configuration file to enable calendar display.</p>
             </div>
         `;
-        addToCalendarBtn.style.display = 'none';
+        const addToCalendarDropdown = document.getElementById('add-to-calendar-dropdown');
+        if (addToCalendarDropdown) {
+            addToCalendarDropdown.parentElement.style.display = 'none';
+        }
+        }
     }
-}
-
+    
+    function populateCalendarFilter() {
+        const calendarFilterContainer = document.querySelector('.calendar-filter-container');
+        if (!calendarFilterContainer) return;
+    
+        // Clear existing content
+        calendarFilterContainer.innerHTML = '';
+    
+        if (appConfig.calendars && appConfig.calendars.length > 0) {
+            appConfig.calendars.forEach((calendarEntry) => {
+                if (calendarEntry.enabled) {
+                    try {
+                        const u = new URL(calendarEntry.url);
+                        const calendarId = u.searchParams.get('src');
+                        if (calendarId) {
+                            const label = document.createElement('label');
+                            const checkbox = document.createElement('input');
+                            checkbox.type = 'checkbox';
+                            checkbox.className = 'calendar-checkbox';
+                            checkbox.value = calendarId;
+                            checkbox.checked = true; // By default, all are checked
+                            checkbox.addEventListener('change', displayEvents); // Re-display events on change
+    
+                            label.appendChild(checkbox);
+                            label.appendChild(document.createTextNode(` ${calendarEntry.name}`));
+                            calendarFilterContainer.appendChild(label);
+                        }
+                    } catch (error) {
+                        console.error('Error parsing calendar URL for filter:', calendarEntry.url, error);
+                    }
+                }
+            });
+        }
+    }
 
 
 function loadEvents() {
@@ -148,13 +218,22 @@ function loadEvents() {
 }
 
 function displayEvents() {
-    if (currentEvents.length === 0) {
+    const selectedCalendarIds = Array.from(document.querySelectorAll('.calendar-checkbox:checked'))
+                                     .map(checkbox => checkbox.value);
+
+    let filteredEvents = currentEvents;
+
+    if (selectedCalendarIds.length > 0 && selectedCalendarIds.length < appConfig.calendars.length) {
+        filteredEvents = currentEvents.filter(event => selectedCalendarIds.includes(event.source));
+    }
+
+    if (filteredEvents.length === 0) {
         eventsList.innerHTML = '<p>No events available for RSVP at this time.</p>';
         return;
     }
     
     const now = new Date();
-    const eventsHtml = currentEvents.map(event => {
+    const eventsHtml = filteredEvents.map(event => {
         const eventDate = new Date(event.date);
         const isPastEvent = eventDate < now;
         const formattedDate = eventDate.toLocaleDateString('en-US', {
@@ -328,15 +407,10 @@ function setupEventListeners() {
         });
     }
 
-    // Donate and Subscribe buttons
+    // Donate button
     const donateBtn = document.getElementById('donate-btn');
     if (donateBtn) {
         donateBtn.addEventListener('click', donate);
-    }
-
-    const subscribeBtn = document.getElementById('subscribe-btn');
-    if (subscribeBtn) {
-        subscribeBtn.addEventListener('click', subscribe);
     }
 }
 
@@ -389,28 +463,7 @@ async function donate() {
     }
 }
 
-async function subscribe() {
-    try {
-        const keyResponse = await fetch(`${API_BASE_URL}/api/stripe-key`);
-        const { publicKey } = await keyResponse.json();
-        const stripe = Stripe(publicKey);
 
-        const response = await fetch(`${API_BASE_URL}/api/create-subscription-checkout-session`, {
-            method: 'POST',
-        });
-        const session = await response.json();
-        const result = await stripe.redirectToCheckout({
-            sessionId: session.id,
-        });
-
-        if (result.error) {
-            alert(result.error.message);
-        }
-    } catch (error) {
-        console.error('Error creating checkout session:', error);
-        alert('Error creating checkout session. Please try again.');
-    }
-}
 
 function submitRsvp(action) {
     if (!currentEventForRsvp) {
@@ -457,63 +510,9 @@ function submitRsvp(action) {
 
 
 
-// Export functions for potential use by other modules
-window.EventAttendanceApp = {
-    openRsvpModal,
-    closeRsvpModal,
-    submitRsvp,
-    submitRsvpDirect
-};
-
-// Feedback Modal Logic
-const feedbackModal = document.getElementById("feedback-modal");
-const feedbackBtn = document.getElementById("feedback-btn");
-const closeFeedbackBtn = document.getElementById("close-feedback-modal-btn");
-
-if (feedbackBtn) {
-    feedbackBtn.onclick = function() {
-      feedbackModal.classList.remove("hidden");
+    const reportIssueBtn = document.getElementById('report-issue-btn');
+    if (reportIssueBtn) {
+        reportIssueBtn.addEventListener('click', () => {
+            window.open('https://docs.google.com/forms/d/e/1FAIpQLScEcmD-j6pd9U9q323nQT5xMf2G8AW2X4GkUAlGOr89ZlNwGg/viewform?embedded=true', '_blank');
+        });
     }
-}
-
-if (closeFeedbackBtn) {
-    closeFeedbackBtn.onclick = function() {
-      feedbackModal.classList.add("hidden");
-    }
-}
-
-// Close feedback modal when clicking outside
-if (feedbackModal) {
-    feedbackModal.addEventListener('click', function(e) {
-        if (e.target === feedbackModal) {
-            feedbackModal.classList.add("hidden");
-        }
-    });
-}
-
-// Join Contributor Modal Logic
-const joinContributorModal = document.getElementById("join-contributor-modal");
-const joinContributorLink = document.getElementById("join-contributor-link");
-const closeJoinContributorBtn = document.getElementById("close-join-contributor-modal-btn");
-
-if (joinContributorLink) {
-    joinContributorLink.onclick = function(e) {
-      e.preventDefault();
-      joinContributorModal.classList.remove("hidden");
-    }
-}
-
-if (closeJoinContributorBtn) {
-    closeJoinContributorBtn.onclick = function() {
-      joinContributorModal.classList.add("hidden");
-    }
-}
-
-// Close join contributor modal when clicking outside
-if (joinContributorModal) {
-    joinContributorModal.addEventListener('click', function(e) {
-        if (e.target === joinContributorModal) {
-            joinContributorModal.classList.add("hidden");
-        }
-    });
-}

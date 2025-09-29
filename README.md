@@ -93,9 +93,18 @@ To integrate your Google Calendar:
    - Copy the "Public URL" or "Embed code"
 
 3. **Add to the app**:
-   - Open the web application
-   - Paste your calendar URL in the Google Calendar integration section
-   - Click "Embed Calendar"
+   - Open `config/app.json`
+   - In the `calendar` object, update the `urls` array with your Google Calendar embed URLs.
+     Example:
+     ```json
+     "calendar": {
+       "urls": [
+         "https://calendar.google.com/calendar/embed?src=yourcalendarid1@group.calendar.google.com&ctz=Europe%2FBrussels",
+         "https://calendar.google.com/calendar/embed?src=yourcalendarid2@group.calendar.google.com&ctz=Europe%2FBrussels"
+       ],
+       "enabled": true
+     }
+     ```
 
 ## API Endpoints
 

@@ -1,8 +1,21 @@
 {
-  "calendar": {
-    "url": "https://calendar.google.com/calendar/embed?src=93fbbef207d5f43b38f8121959849c46eff80f9c7d31826ada851c1095dea9e8%40group.calendar.google.com&ctz=Europe%2FBrussels&wkst=2",
-    "enabled": true
-  },
+  "calendars": [
+    {
+      "name": "SportsCenter",
+      "url": "https://calendar.google.com/calendar/embed?src=93fbbef207d5f43b38f8121959849c46eff80f9c7d31826ada851c1095dea9e8%40group.calendar.google.com&ctz=Europe%2FBrussels",
+      "enabled": true
+    },
+    {
+      "name": "TSA",
+      "url": "https://calendar.google.com/calendar/embed?src=90e81f658dee696bd826585eaa03e9d9865828e945c2a8c882cfc45de45f74e7%40group.calendar.google.com&ctz=Europe%2FBrussels",
+      "enabled": true
+    },
+    {
+      "name": "揪團啦",
+      "url": "https://calendar.google.com/calendar/embed?src=187fad6ff592f23633051efeaa9cc814c8c9a81c4edad7808a82e552d9459b8d%40group.calendar.google.com&ctz=Europe%2FBrussels",
+      "enabled": true
+    }
+  ],
   "events": {
     "autoFetch": true,
     "defaultTimeRange": "future",
@@ -11,5 +24,6 @@
   "rsvp": {
     "allowAnonymous": false,
     "requireName": true
-  }
+  },
+  "joinGroupUrl": "https://groups.google.com/g/leuven-taiwanese"
 }
