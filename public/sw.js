@@ -37,7 +37,12 @@ self.addEventListener('activate', event => {
   );
 });
 
-self.addEventListener('fetch', event => {
+self.addEventListener('fetch', (event) => {
+    // Ignore non-GET requests and requests to non-web-standard schemes
+    if (event.request.method !== 'GET' || !event.request.url.startsWith('http')) {
+        return;
+    }
+
     // Stale-while-revalidate for all requests
     event.respondWith(
         caches.open(CACHE_NAME).then(cache => {

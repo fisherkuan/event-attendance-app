@@ -46,9 +46,50 @@ function initializeApp() {
         
         // Set up event listeners
         setupEventListeners();
-        
-        
+
+        // Set up WebSocket connection
+        setupWebSocket();
     });
+}
+
+// Set up WebSocket connection
+function setupWebSocket() {
+    const wsProtocol = window.location.protocol === 'https' ? 'wss' : 'ws';
+    const wsUrl = `${wsProtocol}://${window.location.host}`;
+    const ws = new WebSocket(wsUrl);
+
+    ws.onopen = () => {
+        console.log('WebSocket connection established');
+    };
+
+    ws.onmessage = (message) => {
+        try {
+            const data = JSON.parse(message.data);
+            if (data.type === 'attendance_update') {
+                const { eventId, attendingCount, attendees } = data.payload;
+                const eventIndex = currentEvents.findIndex(e => e.id === eventId);
+
+                if (eventIndex !== -1) {
+                    // Update only attendance-related fields
+                    currentEvents[eventIndex].attendingCount = attendingCount;
+                    currentEvents[eventIndex].attendees = attendees;
+                    displayEvents(); // Re-render the events list
+                }
+            }
+        } catch (error) {
+            console.error('Error processing WebSocket message:', error);
+        }
+    };
+
+    ws.onclose = () => {
+        console.log('WebSocket connection closed. Attempting to reconnect...');
+        // Simple reconnect logic
+        setTimeout(setupWebSocket, 5000);
+    };
+
+    ws.onerror = (error) => {
+        console.error('WebSocket error:', error);
+    };
 }
 
 // Load configuration from server
@@ -262,10 +303,10 @@ function displayEvents() {
             ? '<div class="rsvp-disabled">Past Event - RSVP Closed</div>'
             : `
                 <div class="event-rsvp-buttons">
-                    <button class="rsvp-add-btn-small ${isFull ? 'rsvp-full-btn' : ''}" onclick="submitRsvpDirect('${event.id}', 'add')" ${isFull ? 'disabled' : ''}>
-                        <span class="icon">${isFull ? 'Full' : '＋'}</span>
+                    <button class="rsvp-add-btn-small ${isFull ? 'rsvp-full-btn' : ''}" data-event-id="${event.id}" data-action="add" ${isFull ? 'disabled' : ''}>
+                        <span class="icon">＋</span>
                     </button>
-                    <button class="rsvp-remove-btn-small" onclick="submitRsvpDirect('${event.id}', 'remove')" ${event.attendingCount === 0 ? 'disabled' : ''}>
+                    <button class="rsvp-remove-btn-small" data-event-id="${event.id}" data-action="remove" ${event.attendingCount === 0 ? 'disabled' : ''}>
                         <span class="icon">－</span>
                     </button>
                 </div>
@@ -288,28 +329,63 @@ function displayEvents() {
     }).join('');
     
     eventsList.innerHTML = eventsHtml;
+
+    // Add event listeners after the HTML is in the DOM
+    document.querySelectorAll('.rsvp-add-btn-small, .rsvp-remove-btn-small').forEach(button => {
+        button.addEventListener('click', (e) => {
+            const btn = e.currentTarget;
+            const eventId = btn.dataset.eventId;
+            const action = btn.dataset.action;
+
+            if (!eventId || !action) return;
+
+            const event = currentEvents.find(e => e.id === eventId);
+            if (!event) return;
+
+            const eventDate = new Date(event.date);
+            const now = new Date();
+            if (eventDate < now) {
+                alert('Cannot RSVP for past events');
+                return;
+            }
+
+            if (action === 'add') {
+                openRsvpModal(eventId);
+            } else if (action === 'remove') {
+                openRemoveRsvpModal(eventId);
+            }
+        });
+    });
 }
 
 function openRsvpModal(eventId) {
+    console.log('openRsvpModal started for event:', eventId);
     const event = currentEvents.find(e => e.id === eventId);
-    if (!event) return;
-    
+    if (!event) {
+        console.error('Add Modal: Event not found!');
+        return;
+    }
+
     currentEventForRsvp = event;
-    
-    // Populate modal with event details
-    document.getElementById('modal-event-title').textContent = event.title;
-    document.getElementById('modal-event-date').textContent = new Date(event.date).toLocaleDateString('en-US', {
-        weekday: 'long',
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit'
-    });
-    document.getElementById('modal-event-description').textContent = event.description;
-    
-    // Show modal
+
+    // Show modal immediately
+    console.log('Add Modal: Removing hidden class');
     rsvpModal.classList.remove('hidden');
+
+    // Populate content after a short delay to allow rendering
+    setTimeout(() => {
+        console.log('Add Modal: setTimeout callback executing');
+        document.getElementById('modal-event-title').textContent = event.title;
+        document.getElementById('modal-event-date').textContent = new Date(event.date).toLocaleDateString('en-US', {
+            weekday: 'long',
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit'
+        });
+        document.getElementById('modal-event-description').textContent = event.description;
+    }, 10); // A small delay is enough
 }
 
 function closeRsvpModal() {
@@ -319,34 +395,42 @@ function closeRsvpModal() {
 }
 
 function openRemoveRsvpModal(eventId) {
+    console.log('openRemoveRsvpModal started for event:', eventId);
     const event = currentEvents.find(e => e.id === eventId);
-    if (!event) return;
+    if (!event) {
+        console.error('Remove Modal: Event not found!');
+        return;
+    }
 
     currentEventForRsvp = event;
 
-    document.getElementById('remove-modal-event-title').textContent = event.title;
-    document.getElementById('remove-modal-event-date').textContent = new Date(event.date).toLocaleDateString('en-US', {
-        weekday: 'long',
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit'
-    });
-
-    const attendeeSelector = document.getElementById('attendee-to-remove');
-    attendeeSelector.innerHTML = '';
-
-    event.attendees.forEach(attendee => {
-        const option = document.createElement('option');
-        option.value = attendee;
-        option.textContent = attendee;
-        attendeeSelector.appendChild(option);
-    });
-
-    
-
+    // Show modal immediately
+    console.log('Remove Modal: Removing hidden class');
     document.getElementById('remove-rsvp-modal').classList.remove('hidden');
+
+    // Populate content after a short delay to allow rendering
+    setTimeout(() => {
+        console.log('Remove Modal: setTimeout callback executing');
+        document.getElementById('remove-modal-event-title').textContent = event.title;
+        document.getElementById('remove-modal-event-date').textContent = new Date(event.date).toLocaleDateString('en-US', {
+            weekday: 'long',
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit'
+        });
+
+        const attendeeSelector = document.getElementById('attendee-to-remove');
+        attendeeSelector.innerHTML = '';
+
+        event.attendees.forEach(attendee => {
+            const option = document.createElement('option');
+            option.value = attendee;
+            option.textContent = attendee;
+            attendeeSelector.appendChild(option);
+        });
+    }, 10); // A small delay is enough
 }
 
 function closeRemoveRsvpModal() {
@@ -380,7 +464,6 @@ function submitRemoveRsvp() {
         if (result.success) {
             alert(result.message);
             closeRemoveRsvpModal();
-            loadEvents(); // Refresh events list
         } else {
             alert('Error: ' + result.message);
         }
@@ -411,32 +494,6 @@ function setupEventListeners() {
     const donateBtn = document.getElementById('donate-btn');
     if (donateBtn) {
         donateBtn.addEventListener('click', donate);
-    }
-}
-
-function submitRsvpDirect(eventId, action, attendeeName) {
-    const event = currentEvents.find(e => e.id === eventId);
-    if (!event) {
-        alert('Event not found');
-        return;
-    }
-
-    // Check if it's a past event
-    const eventDate = new Date(event.date);
-    const now = new Date();
-    if (eventDate < now) {
-        alert('Cannot RSVP for past events');
-        return;
-    }
-
-    if (action === 'remove') {
-        openRemoveRsvpModal(eventId);
-        return;
-    }
-
-    if (action === 'add') {
-        openRsvpModal(eventId);
-        return;
     }
 }
 
@@ -495,7 +552,6 @@ function submitRsvp(action) {
         if (result.success) {
             alert(result.message);
             closeRsvpModal();
-            loadEvents(); // Refresh events list
         } else {
             alert('Error: ' + result.message);
         }

@@ -4,6 +4,8 @@ const bodyParser = require('body-parser');
 const path = require('path');
 const { Pool } = require('pg');
 const { v4: uuidv4 } = require('uuid');
+const http = require('http');
+const WebSocket = require('ws');
 
 // Load environment variables
 require('dotenv').config();
@@ -40,6 +42,27 @@ try {
         events: { autoFetch: false, defaultTimeRange: 'future', refreshInterval: 300000 },
         rsvp: { allowAnonymous: false, requireName: true }
     };
+}
+
+// Create HTTP server
+const server = http.createServer(app);
+
+// Create WebSocket server
+const wss = new WebSocket.Server({ server });
+
+wss.on('connection', ws => {
+    console.log('Client connected');
+    ws.on('close', () => {
+        console.log('Client disconnected');
+    });
+});
+
+function broadcast(data) {
+    wss.clients.forEach(client => {
+        if (client.readyState === WebSocket.OPEN) {
+            client.send(JSON.stringify(data));
+        }
+    });
 }
 
 // Initialize database schema
@@ -362,6 +385,20 @@ app.post('/api/rsvp', async (req, res) => {
             );
         }
 
+        // After action, fetch updated attendance data and broadcast
+        const eventRsvpsResult = await client.query('SELECT attendee_name FROM rsvps WHERE event_id = $1 AND attendance = $2', [eventId, 'yes']);
+        const attendees = eventRsvpsResult.rows.map(rsvp => rsvp.attendee_name);
+        const attendingCount = attendees.length;
+
+        broadcast({
+            type: 'attendance_update',
+            payload: {
+                eventId,
+                attendingCount,
+                attendees
+            }
+        });
+
         res.json({ success: true, message: `RSVP ${action === 'add' ? 'added' : 'removed'} successfully` });
     } catch (error) {
         console.error('Error submitting RSVP:', error);
@@ -415,11 +452,13 @@ app.put('/api/events/:id', async (req, res) => {
             return res.status(400).json({ success: false, message: 'Title and date are required' });
         }
 
+        const limit = attendanceLimit ? parseInt(attendanceLimit, 10) : null;
+
         await client.query(
             `UPDATE events 
              SET title = $1, date = $2, description = $3, location = $4, attendance_limit = $5
              WHERE id = $6`,
-            [title, date, description, location, attendanceLimit, id]
+            [title, date, description, location, limit, id]
         );
 
         res.json({ success: true, message: 'Event updated successfully' });
@@ -469,7 +508,7 @@ app.use((err, req, res, next) => {
 
 // Initialize database and start server
 initializeDatabase().then(() => {
-    app.listen(PORT, () => {
+    server.listen(PORT, () => {
         console.log(`🚀 Event Attendance App server running on http://localhost:${PORT}`);
         console.log('🎉 Ready to accept RSVPs!');
     });

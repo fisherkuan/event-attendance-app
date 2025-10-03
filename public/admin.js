@@ -6,7 +6,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
 async function loadEvents() {
     try {
-        const response = await fetch(`${API_BASE_URL}/api/events?timeRange=future`);
+        const response = await fetch(`${API_BASE_URL}/api/events?timeRange=future`, { cache: 'no-cache' });
         const events = await response.json();
         displayEvents(events);
     } catch (error) {
@@ -16,26 +16,29 @@ async function loadEvents() {
 
 function displayEvents(events) {
     const eventsList = document.getElementById('admin-events-list');
-    eventsList.innerHTML = events.map(event => `
-        <div class="event-card-admin">
-            <div>
-                <h3>${event.title}</h3>
-                <p>${new Date(event.date).toLocaleString('en-US', {
-                    weekday: 'long',
-                    year: 'numeric',
-                    month: 'long',
-                    day: 'numeric',
-                    hour: '2-digit',
-                    minute: '2-digit'
-                })}</p>
+    eventsList.innerHTML = events.map(event => {
+        const buttonText = event.attendance_limit ? 'Update Limit' : 'Set Limit';
+        return `
+            <div class="event-card-admin">
+                <div>
+                    <h3>${event.title}</h3>
+                    <p>${new Date(event.date).toLocaleString('en-US', {
+                        weekday: 'long',
+                        year: 'numeric',
+                        month: 'long',
+                        day: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit'
+                    })}</p>
+                </div>
+                <div class="attendance-limit-form">
+                    <input type="number" id="limit-${event.id}" value="${event.attendance_limit || ''}" placeholder="No limit" min="1">
+                    <button onclick="updateAttendanceLimit('${event.id}')">${buttonText}</button>
+                    <button class="btn-secondary" onclick="removeAttendanceLimit('${event.id}')">Remove Limit</button>
+                </div>
             </div>
-            <div class="attendance-limit-form">
-                <input type="number" id="limit-${event.id}" value="${event.attendance_limit || ''}" placeholder="No limit" min="1">
-                <button onclick="updateAttendanceLimit('${event.id}')">Set Limit</button>
-                <button class="btn-secondary" onclick="removeAttendanceLimit('${event.id}')">Remove Limit</button>
-            </div>
-        </div>
-    `).join('');
+        `;
+    }).join('');
 }
 
 async function updateAttendanceLimit(eventId) {
@@ -48,14 +51,17 @@ async function updateAttendanceLimit(eventId) {
     }
 
     try {
-        // First, get the current event details
         const eventResponse = await fetch(`${API_BASE_URL}/api/events/${eventId}`);
-        if (!eventResponse.ok) {
-            throw new Error('Failed to fetch event details.');
-        }
+        if (!eventResponse.ok) throw new Error('Failed to fetch event details.');
         const event = await eventResponse.json();
 
-        // Now, send the update request with all required fields
+        if (newLimit === event.attendance_limit) {
+            alert(`Attendance limit for "${event.title}" is already set to ${newLimit ? newLimit : 'unlimited'}.`);
+            return;
+        }
+
+        const actionText = event.attendance_limit ? 'updated' : 'set';
+
         const updateResponse = await fetch(`${API_BASE_URL}/api/events/${eventId}`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
@@ -69,7 +75,7 @@ async function updateAttendanceLimit(eventId) {
         });
 
         if (updateResponse.ok) {
-            alert('Attendance limit updated successfully!');
+            alert(`Attendance limit for "${event.title}" successfully ${actionText} to ${newLimit ? newLimit : 'unlimited'}.`);
             loadEvents();
         } else {
             const error = await updateResponse.json();
@@ -83,14 +89,15 @@ async function updateAttendanceLimit(eventId) {
 
 async function removeAttendanceLimit(eventId) {
     try {
-        // First, get the current event details
         const eventResponse = await fetch(`${API_BASE_URL}/api/events/${eventId}`);
-        if (!eventResponse.ok) {
-            throw new Error('Failed to fetch event details.');
-        }
+        if (!eventResponse.ok) throw new Error('Failed to fetch event details.');
         const event = await eventResponse.json();
 
-        // Now, send the update request with all required fields
+        if (event.attendance_limit === null) {
+            alert(`There is no attendance limit set for "${event.title}".`);
+            return;
+        }
+
         const updateResponse = await fetch(`${API_BASE_URL}/api/events/${eventId}`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
@@ -104,7 +111,8 @@ async function removeAttendanceLimit(eventId) {
         });
 
         if (updateResponse.ok) {
-            alert('Attendance limit removed successfully!');
+            alert(`Attendance limit for "${event.title}" removed successfully!`);
+            document.getElementById(`limit-${eventId}`).value = '';
             loadEvents();
         } else {
             const error = await updateResponse.json();
