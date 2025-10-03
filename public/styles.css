@@ -893,23 +893,7 @@ section h2 {
     }
 }
 
-/* Print styles */
-@media print {
-    .modal,
-    .rsvp-btn,
-    #facebook-sso {
-        display: none !important;
-    }
-    
-    body {
-        background: white;
-    }
-    
-    section {
-        box-shadow: none;
-        border: 1px solid #e2e8f0;
-    }
-}
+
 
 /* Instructions Button Styles */
 .instructions-btn {

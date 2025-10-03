@@ -91,15 +91,6 @@ The app supports embedding public Google Calendar iframes:
 
 **Integration Function:** `embedCalendar()` in `public/app.js`
 
-## Facebook SSO (Planned Feature)
-
-Facebook SSO integration is prepared but not implemented:
-
-- Configuration documented in `config/facebook-sso.md`
-- Frontend placeholder functions exist
-- Requires Facebook App setup and additional dependencies
-- Environment variables defined in `.env.example`
-
 ## File Organization
 
 ```
@@ -112,8 +103,6 @@ event-attendance-app/
 ├── data/                 # JSON data storage (auto-created)
 │   ├── events.json       # Event definitions
 │   └── rsvps.json        # RSVP responses
-├── config/               # Configuration documentation
-│   └── facebook-sso.md   # Facebook integration guide
 ├── .env.example          # Environment template
 └── package.json          # Dependencies and scripts
 ```

@@ -13,7 +13,7 @@ A modern web application for managing event RSVPs with Google Calendar integrati
 - 📱 **Responsive Design** - Works seamlessly on desktop, tablet, and mobile
 
 ### Optional Features
-- 🔐 **Facebook SSO Integration** - Sign in with Facebook (implementation ready)
+
 - 🎨 **Modern UI/UX** - Clean, professional interface with smooth animations
 - 💾 **File-based Storage** - No database required for quick setup
 
@@ -37,7 +37,7 @@ event-attendance-app/
 ├── server/               # Backend server
 │   └── app.js           # Express.js server
 ├── config/              # Configuration files
-│   └── facebook-sso.md  # Facebook integration guide
+
 ├── data/                # Data storage (auto-generated)
 │   ├── events.json      # Events data
 │   └── rsvps.json       # RSVP responses
@@ -137,7 +137,7 @@ Key configuration options:
 - `PORT` - Server port (default: 3000)
 - `NODE_ENV` - Environment (development/production)
 - `GOOGLE_CALENDAR_API_KEY` - For advanced calendar integration
-- `FACEBOOK_APP_ID` - For Facebook SSO (optional)
+
 
 ### Sample Events
 
@@ -181,74 +181,3 @@ Key considerations for production:
 - Configure HTTPS
 - Set up process monitoring
 - Consider database migration for scale
-
-## Future Enhancements
-
-
-
-### Potential Additions
-
-- **Email notifications** for RSVP confirmations
-- **Database integration** (PostgreSQL, MongoDB)
-- **Event creation UI** for hosts
-- **Calendar synchronization** with personal calendars
-- **Multi-language support**
-- **Event categories and filtering**
-- **Waitlist management**
-- **Guest limits and capacity tracking**
-
-## Data Storage
-
-The application uses JSON files for data storage:
-
-- **events.json**: Stores event information
-- **rsvps.json**: Stores RSVP responses
-
-Data is automatically created and managed by the application. For production use with high traffic, consider migrating to a proper database.
-
-## Security
-
-- Input validation on all user inputs
-- CORS protection
-
-- Environment variable protection for sensitive data
-- SQL injection protection (when using databases)
-
-## Contributing
-
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Test thoroughly
-5. Submit a pull request
-
-## Troubleshooting
-
-### Common Issues
-
-1. **Calendar not loading**: Ensure your Google Calendar is public and the URL is correct
-2. **Port already in use**: Change the PORT in `.env` or stop other services using port 3000
-3. **Dependencies not installing**: Clear npm cache with `npm cache clean --force`
-4. **RSVP not submitting**: Check browser console for errors and ensure server is running
-
-### Getting Help
-
-- Check the browser console for client-side errors
-- Check server logs for backend issues
-- Ensure all dependencies are properly installed
-- Verify environment variables are set correctly
-
-## License
-
-MIT License - Feel free to use this project for personal or commercial purposes.
-
-## Acknowledgments
-
-- Built with modern web technologies
-- Designed for simplicity and usability
-- Privacy-focused approach to event management
-- Responsive design for all devices
-
----
-
-**Ready to manage your events better?** Start by following the Quick Start guide above!

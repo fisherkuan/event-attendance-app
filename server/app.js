@@ -290,18 +290,30 @@ app.get('/api/events', async (req, res) => {
                 break;
         }
 
-        const eventsResult = await client.query(`SELECT * FROM events ${timeRangeFilter} ORDER BY date`);
-        const rsvpsResult = await client.query('SELECT * FROM rsvps');
+        const eventsResult = await client.query(`
+            SELECT 
+                e.*, 
+                COALESCE(r.attendingCount, 0) as "attendingCount",
+                r.attendees
+            FROM events e
+            LEFT JOIN (
+                SELECT 
+                    event_id, 
+                    COUNT(*) as attendingCount,
+                    array_agg(attendee_name) as attendees
+                FROM rsvps 
+                WHERE attendance = 'yes' 
+                GROUP BY event_id
+            ) r ON e.id = r.event_id
+            ${timeRangeFilter} 
+            ORDER BY e.date
+        `);
 
-        const eventsWithAttendance = eventsResult.rows.map(event => {
-            const eventRsvps = rsvpsResult.rows.filter(rsvp => rsvp.event_id === event.id && rsvp.attendance === 'yes');
-            const attendees = eventRsvps.map(rsvp => rsvp.attendee_name);
-            return {
-                ...event,
-                attendees,
-                attendingCount: eventRsvps.length
-            };
-        });
+        const eventsWithAttendance = eventsResult.rows.map(event => ({
+            ...event,
+            attendingCount: parseInt(event.attendingCount, 10),
+            attendees: event.attendees || []
+        }));
 
         res.json(eventsWithAttendance);
     } catch (error) {
@@ -460,6 +472,22 @@ app.put('/api/events/:id', async (req, res) => {
              WHERE id = $6`,
             [title, date, description, location, limit, id]
         );
+
+        const updatedEventResult = await client.query('SELECT * FROM events WHERE id = $1', [id]);
+        const updatedEvent = updatedEventResult.rows[0];
+
+        const eventRsvpsResult = await client.query('SELECT attendee_name FROM rsvps WHERE event_id = $1 AND attendance = $2', [id, 'yes']);
+        const attendees = eventRsvpsResult.rows.map(rsvp => rsvp.attendee_name);
+        const attendingCount = attendees.length;
+
+        broadcast({
+            type: 'event_update',
+            payload: {
+                ...updatedEvent,
+                attendees,
+                attendingCount
+            }
+        });
 
         res.json({ success: true, message: 'Event updated successfully' });
     } catch (error) {

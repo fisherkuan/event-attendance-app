@@ -1,3 +1,19 @@
+// Debounce function
+function debounce(func, wait, immediate) {
+    var timeout;
+    return function() {
+        var context = this, args = arguments;
+        var later = function() {
+            timeout = null;
+            if (!immediate) func.apply(context, args);
+        };
+        var callNow = immediate && !timeout;
+        clearTimeout(timeout);
+        timeout = setTimeout(later, wait);
+        if (callNow) func.apply(context, args);
+    };
+};
+
 // Event Attendance App - Main JavaScript File
 
 // Configuration
@@ -227,7 +243,7 @@ function setupCalendar() {
                             checkbox.className = 'calendar-checkbox';
                             checkbox.value = calendarId;
                             checkbox.checked = true; // By default, all are checked
-                            checkbox.addEventListener('change', displayEvents); // Re-display events on change
+                            checkbox.addEventListener('change', debounce(loadEvents, 250)); // Re-load events on change
     
                             label.appendChild(checkbox);
                             label.appendChild(document.createTextNode(` ${calendarEntry.name}`));
@@ -329,33 +345,6 @@ function displayEvents() {
     }).join('');
     
     eventsList.innerHTML = eventsHtml;
-
-    // Add event listeners after the HTML is in the DOM
-    document.querySelectorAll('.rsvp-add-btn-small, .rsvp-remove-btn-small').forEach(button => {
-        button.addEventListener('click', (e) => {
-            const btn = e.currentTarget;
-            const eventId = btn.dataset.eventId;
-            const action = btn.dataset.action;
-
-            if (!eventId || !action) return;
-
-            const event = currentEvents.find(e => e.id === eventId);
-            if (!event) return;
-
-            const eventDate = new Date(event.date);
-            const now = new Date();
-            if (eventDate < now) {
-                alert('Cannot RSVP for past events');
-                return;
-            }
-
-            if (action === 'add') {
-                openRsvpModal(eventId);
-            } else if (action === 'remove') {
-                openRemoveRsvpModal(eventId);
-            }
-        });
-    });
 }
 
 function openRsvpModal(eventId) {
@@ -475,6 +464,32 @@ function submitRemoveRsvp() {
 }
 
 function setupEventListeners() {
+    eventsList.addEventListener('click', (e) => {
+        const btn = e.target.closest('.rsvp-add-btn-small, .rsvp-remove-btn-small');
+        if (!btn) return;
+
+        const eventId = btn.dataset.eventId;
+        const action = btn.dataset.action;
+
+        if (!eventId || !action) return;
+
+        const event = currentEvents.find(e => e.id === eventId);
+        if (!event) return;
+
+        const eventDate = new Date(event.date);
+        const now = new Date();
+        if (eventDate < now) {
+            alert('Cannot RSVP for past events');
+            return;
+        }
+
+        if (action === 'add') {
+            openRsvpModal(eventId);
+        } else if (action === 'remove') {
+            openRemoveRsvpModal(eventId);
+        }
+    });
+
     // Close modal when clicking outside
     rsvpModal.addEventListener('click', function(e) {
         if (e.target === rsvpModal) {
@@ -485,9 +500,7 @@ function setupEventListeners() {
     // Refresh button
     const refreshBtn = document.getElementById('refresh-events-btn');
     if (refreshBtn) {
-        refreshBtn.addEventListener('click', function() {
-            loadEvents();
-        });
+        refreshBtn.addEventListener('click', debounce(loadEvents, 250));
     }
 
     // Donate button

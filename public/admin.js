@@ -2,7 +2,52 @@ const API_BASE_URL = window.location.origin;
 
 document.addEventListener('DOMContentLoaded', () => {
     loadEvents();
+    setupWebSocket();
 });
+
+function setupWebSocket() {
+    const wsProtocol = window.location.protocol === 'https' ? 'wss' : 'ws';
+    const wsUrl = `${wsProtocol}://${window.location.host}`;
+    const ws = new WebSocket(wsUrl);
+
+    ws.onopen = () => {
+        console.log('WebSocket connection established');
+    };
+
+    ws.onmessage = (message) => {
+        try {
+            const data = JSON.parse(message.data);
+            if (data.type === 'event_update') {
+                updateEventInUI(data.payload);
+            }
+        } catch (error) {
+            console.error('Error processing WebSocket message:', error);
+        }
+    };
+
+    ws.onclose = () => {
+        console.log('WebSocket connection closed. Attempting to reconnect...');
+        setTimeout(setupWebSocket, 5000);
+    };
+
+    ws.onerror = (error) => {
+        console.error('WebSocket error:', error);
+    };
+}
+
+function updateEventInUI(event) {
+    const eventElement = document.querySelector(`.event-card-admin[data-event-id='${event.id}']`);
+    if (eventElement) {
+        const input = document.getElementById(`limit-${event.id}`);
+        const button = eventElement.querySelector('button');
+
+        if (document.activeElement !== input) {
+            input.value = event.attendance_limit || '';
+        }
+
+        button.textContent = event.attendance_limit ? 'Update Limit' : 'Set Limit';
+    }
+}
 
 async function loadEvents() {
     try {
@@ -16,29 +61,33 @@ async function loadEvents() {
 
 function displayEvents(events) {
     const eventsList = document.getElementById('admin-events-list');
-    eventsList.innerHTML = events.map(event => {
+    eventsList.innerHTML = ''; // Clear the list
+
+    events.forEach(event => {
         const buttonText = event.attendance_limit ? 'Update Limit' : 'Set Limit';
-        return `
-            <div class="event-card-admin">
-                <div>
-                    <h3>${event.title}</h3>
-                    <p>${new Date(event.date).toLocaleString('en-US', {
-                        weekday: 'long',
-                        year: 'numeric',
-                        month: 'long',
-                        day: 'numeric',
-                        hour: '2-digit',
-                        minute: '2-digit'
-                    })}</p>
-                </div>
-                <div class="attendance-limit-form">
-                    <input type="number" id="limit-${event.id}" value="${event.attendance_limit || ''}" placeholder="No limit" min="1">
-                    <button onclick="updateAttendanceLimit('${event.id}')">${buttonText}</button>
-                    <button class="btn-secondary" onclick="removeAttendanceLimit('${event.id}')">Remove Limit</button>
-                </div>
+        const eventCard = document.createElement('div');
+        eventCard.className = 'event-card-admin';
+        eventCard.dataset.eventId = event.id;
+        eventCard.innerHTML = `
+            <div>
+                <h3>${event.title}</h3>
+                <p>${new Date(event.date).toLocaleString('en-US', {
+                    weekday: 'long',
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                })}</p>
+            </div>
+            <div class="attendance-limit-form">
+                <input type="number" id="limit-${event.id}" value="${event.attendance_limit || ''}" placeholder="No limit" min="1">
+                <button onclick="updateAttendanceLimit('${event.id}')">${buttonText}</button>
+                <button class="btn-secondary" onclick="removeAttendanceLimit('${event.id}')">Remove Limit</button>
             </div>
         `;
-    }).join('');
+        eventsList.appendChild(eventCard);
+    });
 }
 
 async function updateAttendanceLimit(eventId) {
@@ -76,7 +125,6 @@ async function updateAttendanceLimit(eventId) {
 
         if (updateResponse.ok) {
             alert(`Attendance limit for "${event.title}" successfully ${actionText} to ${newLimit ? newLimit : 'unlimited'}.`);
-            loadEvents();
         } else {
             const error = await updateResponse.json();
             alert(`Error: ${error.message}`);
@@ -113,7 +161,6 @@ async function removeAttendanceLimit(eventId) {
         if (updateResponse.ok) {
             alert(`Attendance limit for "${event.title}" removed successfully!`);
             document.getElementById(`limit-${eventId}`).value = '';
-            loadEvents();
         } else {
             const error = await updateResponse.json();
             alert(`Error: ${error.message}`);
