@@ -263,10 +263,30 @@ app.get('/api/events', async (req, res) => {
             }
 
             // Remove deleted calendar events
-            const dbEventsResult = await client.query(`SELECT id FROM events WHERE source = 'calendar'`);
-            const dbEventIds = dbEventsResult.rows.map(row => row.id);
+            const dbEventsResult = await client.query('SELECT id, source FROM events WHERE source IS NOT NULL');
+            const dbEventsBySource = dbEventsResult.rows.reduce((acc, row) => {
+                if (!acc[row.source]) {
+                    acc[row.source] = new Set();
+                }
+                acc[row.source].add(row.id);
+                return acc;
+            }, {});
 
-            const staleEventIds = dbEventIds.filter(id => !calendarEventIds.has(id));
+            const calendarEventsBySource = calendarEvents.reduce((acc, event) => {
+                if (!acc[event.source]) {
+                    acc[event.source] = new Set();
+                }
+                acc[event.source].add(event.id);
+                return acc;
+            }, {});
+
+            let staleEventIds = [];
+            for (const source in dbEventsBySource) {
+                const dbIds = dbEventsBySource[source];
+                const calendarIds = calendarEventsBySource[source] || new Set();
+                const staleIds = [...dbIds].filter(id => !calendarIds.has(id));
+                staleEventIds.push(...staleIds);
+            }
 
             if (staleEventIds.length > 0) {
                 await client.query(`DELETE FROM events WHERE id = ANY($1::varchar[])`, [staleEventIds]);
