@@ -100,31 +100,17 @@ async function updateAttendanceLimit(eventId) {
     }
 
     try {
-        const eventResponse = await fetch(`${API_BASE_URL}/api/events/${eventId}`);
-        if (!eventResponse.ok) throw new Error('Failed to fetch event details.');
-        const event = await eventResponse.json();
-
-        if (newLimit === event.attendance_limit) {
-            alert(`Attendance limit for "${event.title}" is already set to ${newLimit ? newLimit : 'unlimited'}.`);
-            return;
-        }
-
-        const actionText = event.attendance_limit ? 'updated' : 'set';
-
-        const updateResponse = await fetch(`${API_BASE_URL}/api/events/${eventId}`, {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ 
-                title: event.title,
-                date: event.date,
-                description: event.description,
-                location: event.location,
-                attendanceLimit: newLimit
-            })
-        });
+        const updateResponse = await fetch(`${API_BASE_URL}/api/events/${eventId}`,
+            {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ attendanceLimit: newLimit })
+            }
+        );
 
         if (updateResponse.ok) {
-            alert(`Attendance limit for "${event.title}" successfully ${actionText} to ${newLimit ? newLimit : 'unlimited'}.`);
+            const updatedEvent = await updateResponse.json();
+            alert(`Attendance limit for "${updatedEvent.event.title}" successfully updated to ${newLimit ? newLimit : 'unlimited'}.`);
         } else {
             const error = await updateResponse.json();
             alert(`Error: ${error.message}`);
@@ -137,29 +123,17 @@ async function updateAttendanceLimit(eventId) {
 
 async function removeAttendanceLimit(eventId) {
     try {
-        const eventResponse = await fetch(`${API_BASE_URL}/api/events/${eventId}`);
-        if (!eventResponse.ok) throw new Error('Failed to fetch event details.');
-        const event = await eventResponse.json();
-
-        if (event.attendance_limit === null) {
-            alert(`There is no attendance limit set for "${event.title}".`);
-            return;
-        }
-
-        const updateResponse = await fetch(`${API_BASE_URL}/api/events/${eventId}`, {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ 
-                title: event.title,
-                date: event.date,
-                description: event.description,
-                location: event.location,
-                attendanceLimit: null
-            })
-        });
+        const updateResponse = await fetch(`${API_BASE_URL}/api/events/${eventId}`,
+            {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ attendanceLimit: null })
+            }
+        );
 
         if (updateResponse.ok) {
-            alert(`Attendance limit for "${event.title}" removed successfully!`);
+            const updatedEvent = await updateResponse.json();
+            alert(`Attendance limit for "${updatedEvent.event.title}" removed successfully!`);
             document.getElementById(`limit-${eventId}`).value = '';
         } else {
             const error = await updateResponse.json();

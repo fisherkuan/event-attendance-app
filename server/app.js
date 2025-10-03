@@ -146,6 +146,14 @@ async function fetchCalendarEvents() {
                 const descMatch = block.match(/DESCRIPTION:(.*)/);
                 const locMatch = block.match(/LOCATION:(.*)/);
                 const uidMatch = block.match(/UID:(.*)/);
+                let attendanceLimit = null;
+
+                if (descMatch) {
+                    const limitMatch = descMatch[1].match(/limit:?\s*(\d+)/i);
+                    if (limitMatch) {
+                        attendanceLimit = parseInt(limitMatch[1], 10);
+                    }
+                }
 
                 if (summaryMatch && dtstartMatch && uidMatch) {
                     let start = dtstartMatch[1];
@@ -179,7 +187,8 @@ async function fetchCalendarEvents() {
                         endDate: end,
                         description: descMatch ? descMatch[1].replace(/\n/g, '\n').trim() : '',
                         location: locMatch ? locMatch[1].replace(/\n/g, '\n').trim() : '',
-                        source: calendarId
+                        source: calendarId,
+                        attendance_limit: attendanceLimit
                     });
                 }
             }
@@ -248,16 +257,17 @@ app.get('/api/events', async (req, res) => {
             if (calendarEvents.length > 0) {
                 for (const event of calendarEvents) {
                     await client.query(
-                        `INSERT INTO events (id, title, date, endDate, description, location, source)
-                         VALUES ($1, $2, $3, $4, $5, $6, $7)
+                        `INSERT INTO events (id, title, date, endDate, description, location, source, attendance_limit)
+                         VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
                          ON CONFLICT (id) DO UPDATE SET
                             title = $2,
                             date = $3,
                             endDate = $4,
                             description = $5,
                             location = $6,
-                            source = $7`,
-                        [event.id, event.title, event.date, event.endDate, event.description, event.location, event.source]
+                            source = $7,
+                            attendance_limit = $8`,
+                        [event.id, event.title, event.date, event.endDate, event.description, event.location, event.source, event.attendance_limit]
                     );
                 }
             }
@@ -480,17 +490,27 @@ app.put('/api/events/:id', async (req, res) => {
         const { id } = req.params;
         const { title, date, description, location, attendanceLimit } = req.body;
 
-        if (!title || !date) {
-            return res.status(400).json({ success: false, message: 'Title and date are required' });
+        const fields = { title, date, description, location, attendance_limit: attendanceLimit };
+        const updates = [];
+        const values = [];
+        let i = 1;
+
+        for (const [key, value] of Object.entries(fields)) {
+            if (value !== undefined) {
+                updates.push(`${key} = $${i++}`);
+                values.push(value);
+            }
         }
 
-        const limit = attendanceLimit ? parseInt(attendanceLimit, 10) : null;
+        if (updates.length === 0) {
+            return res.status(400).json({ success: false, message: 'No fields to update' });
+        }
+
+        values.push(id);
 
         await client.query(
-            `UPDATE events 
-             SET title = $1, date = $2, description = $3, location = $4, attendance_limit = $5
-             WHERE id = $6`,
-            [title, date, description, location, limit, id]
+            `UPDATE events SET ${updates.join(', ')} WHERE id = $${i}`,
+            values
         );
 
         const updatedEventResult = await client.query('SELECT * FROM events WHERE id = $1', [id]);
@@ -509,7 +529,7 @@ app.put('/api/events/:id', async (req, res) => {
             }
         });
 
-        res.json({ success: true, message: 'Event updated successfully' });
+        res.json({ success: true, message: 'Event updated successfully', event: updatedEvent });
     } catch (error) {
         console.error('Error updating event:', error);
         res.status(500).json({ success: false, message: 'Internal server error' });
