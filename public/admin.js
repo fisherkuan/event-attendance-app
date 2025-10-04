@@ -1,5 +1,7 @@
 const API_BASE_URL = window.location.origin;
 
+let allAdminEvents = []; // Global variable to store event data
+
 document.addEventListener('DOMContentLoaded', () => {
     loadEvents();
     setupWebSocket();
@@ -53,6 +55,7 @@ async function loadEvents() {
     try {
         const response = await fetch(`${API_BASE_URL}/api/events?timeRange=future`, { cache: 'no-cache' });
         const events = await response.json();
+        allAdminEvents = events; // Populate the global variable
         displayEvents(events);
     } catch (error) {
         console.error('Error loading events:', error);
@@ -99,6 +102,29 @@ async function updateAttendanceLimit(eventId) {
         return;
     }
 
+    let shouldProceedWithUpdate = true;
+
+    // Get the current event object to check its description
+    const currentEvent = allAdminEvents.find(event => event.id === eventId);
+    if (currentEvent && currentEvent.description) {
+        const description = currentEvent.description.trim();
+        const limitMatch = description.match(/limit:?\s*(\d+)/i);
+        let descriptionLimit = undefined;
+        if (limitMatch) {
+            descriptionLimit = parseInt(limitMatch[1], 10);
+        }
+
+        // If a limit is specified in the description and it's different from the UI input
+        if (descriptionLimit !== undefined && descriptionLimit !== newLimit) {
+            alert('NOT EFFECTIVE: This event has an attendance limit specified in its description. Please remove it from the description if you want to update the limit here.');
+            shouldProceedWithUpdate = false;
+        }
+    }
+
+    if (!shouldProceedWithUpdate) {
+        return;
+    }
+
     try {
         const updateResponse = await fetch(`${API_BASE_URL}/api/events/${eventId}`,
             {
@@ -122,6 +148,29 @@ async function updateAttendanceLimit(eventId) {
 }
 
 async function removeAttendanceLimit(eventId) {
+    let shouldProceedWithRemoval = true;
+
+    // Get the current event object to check its description
+    const currentEvent = allAdminEvents.find(event => event.id === eventId);
+    if (currentEvent && currentEvent.description) {
+        const description = currentEvent.description.trim();
+        const limitMatch = description.match(/limit:?\s*(\d+)/i);
+        let descriptionLimit = undefined;
+        if (limitMatch) {
+            descriptionLimit = parseInt(limitMatch[1], 10);
+        }
+
+        // If a limit is specified in the description, warn the user
+        if (descriptionLimit !== undefined) {
+            alert('NOT EFFECTIVE: This event has an attendance limit specified in its description. Please remove it from the description if you want to remove the limit here.');
+            shouldProceedWithRemoval = false;
+        }
+    }
+
+    if (!shouldProceedWithRemoval) {
+        return;
+    }
+
     try {
         const updateResponse = await fetch(`${API_BASE_URL}/api/events/${eventId}`,
             {

@@ -146,12 +146,13 @@ async function fetchCalendarEvents() {
                 const descMatch = block.match(/DESCRIPTION:(.*)/);
                 const locMatch = block.match(/LOCATION:(.*)/);
                 const uidMatch = block.match(/UID:(.*)/);
-                let attendanceLimit = null;
+                let attendanceLimitFromDescription = undefined; // Use undefined to signify "not specified"
 
                 if (descMatch) {
-                    const limitMatch = descMatch[1].match(/limit:?\s*(\d+)/i);
+                    const description = descMatch[1].trim();
+                    const limitMatch = description.match(/limit:?\s*(\d+)/i); // Only capture numbers
                     if (limitMatch) {
-                        attendanceLimit = parseInt(limitMatch[1], 10);
+                        attendanceLimitFromDescription = parseInt(limitMatch[1], 10); // A number
                     }
                 }
 
@@ -188,7 +189,7 @@ async function fetchCalendarEvents() {
                         description: descMatch ? descMatch[1].replace(/\n/g, '\n').trim() : '',
                         location: locMatch ? locMatch[1].replace(/\n/g, '\n').trim() : '',
                         source: calendarId,
-                        attendance_limit: attendanceLimit
+                        attendance_limit_from_description: attendanceLimitFromDescription
                     });
                 }
             }
@@ -255,19 +256,40 @@ app.get('/api/events', async (req, res) => {
 
             // Sync calendar events
             if (calendarEvents.length > 0) {
+                // Fetch existing events for comparison
+                const existingEventsResult = await client.query('SELECT id, attendance_limit FROM events');
+                const existingEventsMap = new Map(existingEventsResult.rows.map(row => [row.id, row]));
+
                 for (const event of calendarEvents) {
+                    let finalAttendanceLimit;
+                    const existingEvent = existingEventsMap.get(event.id);
+
+                    if (event.attendance_limit_from_description !== undefined) {
+                        // Limit was explicitly specified in the description (a number)
+                        finalAttendanceLimit = event.attendance_limit_from_description;
+                    } else {
+                        // No limit specified in the description
+                        if (existingEvent) {
+                            // Preserve existing limit if event already exists
+                            finalAttendanceLimit = existingEvent.attendance_limit;
+                        } else {
+                            // New event, no limit in description, so default to null (unlimited)
+                            finalAttendanceLimit = null;
+                        }
+                    }
+
                     await client.query(
                         `INSERT INTO events (id, title, date, endDate, description, location, source, attendance_limit)
                          VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
                          ON CONFLICT (id) DO UPDATE SET
-                            title = $2,
-                            date = $3,
-                            endDate = $4,
-                            description = $5,
-                            location = $6,
-                            source = $7,
+                            title = EXCLUDED.title,
+                            date = EXCLUDED.date,
+                            endDate = EXCLUDED.endDate,
+                            description = EXCLUDED.description,
+                            location = EXCLUDED.location,
+                            source = EXCLUDED.source,
                             attendance_limit = $8`,
-                        [event.id, event.title, event.date, event.endDate, event.description, event.location, event.source, event.attendance_limit]
+                        [event.id, event.title, event.date, event.endDate, event.description, event.location, event.source, finalAttendanceLimit]
                     );
                 }
             }
