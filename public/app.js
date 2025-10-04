@@ -14,6 +14,22 @@ function debounce(func, wait, immediate) {
     };
 };
 
+function escapeHtml(value) {
+    if (value === null || value === undefined) {
+        return '';
+    }
+    return String(value)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+}
+
+function escapeAttribute(value) {
+    return escapeHtml(value).replace(/\n/g, '&#10;');
+}
+
 // Event Attendance App - Main JavaScript File
 
 // Configuration
@@ -301,11 +317,15 @@ function displayEvents() {
             hour: '2-digit',
             minute: '2-digit'
         });
+        const sanitizedFormattedDate = escapeHtml(formattedDate);
 
-        let attendanceInfo = '';
-        if (event.attendees && event.attendees.length > 0) {
-            attendanceInfo = event.attendees.join('\n');
-        }
+        const sanitizedEventId = escapeAttribute(event.id);
+        const sanitizedTitle = escapeHtml(event.title);
+        const sanitizedDescription = escapeHtml(event.description);
+        const sanitizedLocation = escapeHtml(event.location);
+        const attendeesList = Array.isArray(event.attendees) ? event.attendees.map(escapeHtml) : [];
+        const attendanceInfo = attendeesList.join('\n');
+        const attendanceInfoAttr = escapeAttribute(attendanceInfo);
 
         const isFull = event.attendance_limit !== null && event.attendingCount >= event.attendance_limit;
 
@@ -313,30 +333,31 @@ function displayEvents() {
         if (event.attendance_limit !== null) {
             attendanceText += ` / ${event.attendance_limit}`;
         }
+        const sanitizedAttendanceText = escapeHtml(attendanceText);
 
         // Show different buttons based on whether it's a past or future event
         const rsvpButtons = isPastEvent
             ? '<div class="rsvp-disabled">Past Event - RSVP Closed</div>'
             : `
                 <div class="event-rsvp-buttons">
-                    <button class="rsvp-add-btn-small ${isFull ? 'rsvp-full-btn' : ''}" data-event-id="${event.id}" data-action="add" ${isFull ? 'disabled' : ''}>
+                    <button class="rsvp-add-btn-small ${isFull ? 'rsvp-full-btn' : ''}" data-event-id="${sanitizedEventId}" data-action="add" ${isFull ? 'disabled' : ''}>
                         <span class="icon">＋</span>
                     </button>
-                    <button class="rsvp-remove-btn-small" data-event-id="${event.id}" data-action="remove" ${event.attendingCount === 0 ? 'disabled' : ''}>
+                    <button class="rsvp-remove-btn-small" data-event-id="${sanitizedEventId}" data-action="remove" ${event.attendingCount === 0 ? 'disabled' : ''}>
                         <span class="icon">－</span>
                     </button>
                 </div>
             `;
         
         return `
-            <div class="event-card" data-event-id="${event.id}">
-                <h3>${event.title}</h3>
-                <p class="event-date">${formattedDate}</p>
-                <p class="event-description">${event.description}</p>
-                ${event.location ? `<p class="event-location">📍 ${event.location}</p>` : ''}
+            <div class="event-card" data-event-id="${sanitizedEventId}">
+                <h3>${sanitizedTitle}</h3>
+                <p class="event-date">${sanitizedFormattedDate}</p>
+                <p class="event-description">${sanitizedDescription}</p>
+                ${event.location ? `<p class="event-location">📍 ${sanitizedLocation}</p>` : ''}
                 <div class="event-footer">
-                    <div class="attendance-info" title="${attendanceInfo}">
-                        <span>${attendanceText}</span>
+                    <div class="attendance-info" title="${attendanceInfoAttr}">
+                        <span>${sanitizedAttendanceText}</span>
                     </div>
                     ${rsvpButtons}
                 </div>

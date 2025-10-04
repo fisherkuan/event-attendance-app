@@ -40,8 +40,21 @@ try {
     appConfig = {
         calendars: [],
         events: { autoFetch: false, defaultTimeRange: 'future', refreshInterval: 300000 },
-        rsvp: { allowAnonymous: false, requireName: true }
+        rsvp: { allowAnonymous: false, requireName: true },
+        stripe: {
+            donationPriceId: '',
+            donationProgress: { current: 0, goal: 0 }
+        }
     };
+}
+
+if (!appConfig.stripe) {
+    appConfig.stripe = {
+        donationPriceId: '',
+        donationProgress: { current: 0, goal: 0 }
+    };
+} else {
+    appConfig.stripe.donationProgress = appConfig.stripe.donationProgress || { current: 0, goal: 0 };
 }
 
 // Create HTTP server
@@ -220,14 +233,24 @@ app.get('/api/stripe-key', (req, res) => {
 
 // Get donation progress
 app.get('/api/donation-progress', (req, res) => {
-    res.json({ current: 600, goal: 1000 });
+    const donationProgress = appConfig.stripe?.donationProgress || {};
+    res.json({
+        current: donationProgress.current ?? 600,
+        goal: donationProgress.goal ?? 1000
+    });
 });
 
 app.post('/api/create-donation-checkout-session', async (req, res) => {
+    const priceId = appConfig.stripe?.donationPriceId;
+
+    if (!priceId) {
+        return res.status(500).json({ error: 'Donation price ID not configured' });
+    }
+
     const session = await stripe.checkout.sessions.create({
         line_items: [
             {
-                price: 'price_1SBB7vJ3tr3bCJWSejLYC3TQ',
+                price: priceId,
                 quantity: 1,
             },
         ],
@@ -392,6 +415,8 @@ app.get('/api/events/:id', async (req, res) => {
     } catch (error) {
         console.error('Error fetching event:', error);
         res.status(500).json({ error: 'Failed to fetch event' });
+    } finally {
+        client.release();
     }
 });
 
@@ -555,6 +580,8 @@ app.put('/api/events/:id', async (req, res) => {
     } catch (error) {
         console.error('Error updating event:', error);
         res.status(500).json({ success: false, message: 'Internal server error' });
+    } finally {
+        client.release();
     }
 });
 

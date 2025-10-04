@@ -71,24 +71,47 @@ function displayEvents(events) {
         const eventCard = document.createElement('div');
         eventCard.className = 'event-card-admin';
         eventCard.dataset.eventId = event.id;
-        eventCard.innerHTML = `
-            <div>
-                <h3>${event.title}</h3>
-                <p>${new Date(event.date).toLocaleString('en-US', {
-                    weekday: 'long',
-                    year: 'numeric',
-                    month: 'long',
-                    day: 'numeric',
-                    hour: '2-digit',
-                    minute: '2-digit'
-                })}</p>
-            </div>
-            <div class="attendance-limit-form">
-                <input type="number" id="limit-${event.id}" value="${event.attendance_limit || ''}" placeholder="No limit" min="1">
-                <button onclick="updateAttendanceLimit('${event.id}')">${buttonText}</button>
-                <button class="btn-secondary" onclick="removeAttendanceLimit('${event.id}')">Remove Limit</button>
-            </div>
-        `;
+
+        const infoContainer = document.createElement('div');
+        const titleEl = document.createElement('h3');
+        titleEl.textContent = event.title;
+        const dateEl = document.createElement('p');
+        dateEl.textContent = new Date(event.date).toLocaleString('en-US', {
+            weekday: 'long',
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit'
+        });
+        infoContainer.appendChild(titleEl);
+        infoContainer.appendChild(dateEl);
+
+        const formContainer = document.createElement('div');
+        formContainer.className = 'attendance-limit-form';
+
+        const limitInput = document.createElement('input');
+        limitInput.type = 'number';
+        limitInput.id = `limit-${event.id}`;
+        limitInput.value = event.attendance_limit || '';
+        limitInput.placeholder = 'No limit';
+        limitInput.min = '1';
+
+        const updateButton = document.createElement('button');
+        updateButton.textContent = buttonText;
+        updateButton.addEventListener('click', () => updateAttendanceLimit(event.id));
+
+        const removeButton = document.createElement('button');
+        removeButton.className = 'btn-secondary';
+        removeButton.textContent = 'Remove Limit';
+        removeButton.addEventListener('click', () => removeAttendanceLimit(event.id));
+
+        formContainer.appendChild(limitInput);
+        formContainer.appendChild(updateButton);
+        formContainer.appendChild(removeButton);
+
+        eventCard.appendChild(infoContainer);
+        eventCard.appendChild(formContainer);
         eventsList.appendChild(eventCard);
     });
 }
