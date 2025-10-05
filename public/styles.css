@@ -22,7 +22,8 @@ h1, h2, h3, h4, h5, h6 {
 .container {
     max-width: 1200px;
     margin: 0 auto;
-    padding: 0 20px;
+    padding: 0 clamp(16px, 4vw, 32px);
+    width: 100%;
 }
 
 /* Header */
@@ -205,6 +206,7 @@ section h2 {
     gap: 16px;
     margin-bottom: 24px;
     align-items: center;
+    flex-wrap: wrap;
 }
 
 .dropdown {
@@ -281,6 +283,17 @@ section h2 {
     align-items: center;
     gap: 5px;
     cursor: pointer;
+    white-space: nowrap;
+    flex: 0 0 auto;
+}
+
+.time-range-selector label {
+    white-space: nowrap;
+}
+
+.time-range-selector select {
+    flex: 0 0 auto;
+    min-width: 140px;
 }
 
 
@@ -812,16 +825,29 @@ section h2 {
 
 /* Responsive design */
 @media (max-width: 768px) {
+    .container {
+        padding: 0;
+    }
+
+    section {
+        padding: 24px 20px;
+        margin-left: 0;
+        margin-right: 0;
+        border-radius: 0;
+        box-shadow: none;
+    }
+
+    .app-header,
+    .bottom-banner {
+        border-radius: 0;
+    }
+
     .app-header h1 {
         font-size: 2rem;
     }
     
     .app-header p {
         font-size: 1rem;
-    }
-    
-    section {
-        padding: 24px 20px;
     }
     
     #events-list {
@@ -848,18 +874,39 @@ section h2 {
     }
     
     .event-rsvp-buttons {
-        flex-direction: column;
+        flex-direction: row;
         gap: 8px;
     }
-    
+
     .time-range-selector {
-        flex-direction: column;
-        align-items: flex-start;
+        flex-direction: row;
+        align-items: center;
         gap: 8px;
+        flex-wrap: nowrap;
+        justify-content: flex-start;
     }
-    
+
     .calendar-actions {
-        flex-direction: column;
+        flex-direction: row;
+        flex-wrap: wrap;
+        align-items: center;
+        justify-content: flex-start;
+        gap: 12px;
+        width: 100%;
+    }
+
+    .calendar-actions .calendar-action-btn,
+    .calendar-actions .dropdown {
+        align-self: center;
+        width: auto;
+    }
+
+    .calendar-filter-container {
+        justify-content: flex-start;
+        width: 100%;
+        gap: 12px;
+        flex-wrap: wrap;
+        flex: 1 1 100%;
     }
 
     #calendar-container iframe {
@@ -869,17 +916,9 @@ section h2 {
 
 @media (max-width: 480px) {
     section {
-        padding: 20px 15px;
+        padding: 20px 18px;
     }
 
-    .calendar-actions {
-        gap: 10px;
-    }
-
-    .container {
-        padding: 0 16px;
-    }
-    
     .app-header {
         padding: 40px 20px;
     }
@@ -1038,6 +1077,8 @@ section h2 {
     align-items: center;
     gap: 8px;
     text-decoration: none;
+    white-space: nowrap;
+}
 
 .btn-icon {
     width: 1.2em;
