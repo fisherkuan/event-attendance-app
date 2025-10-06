@@ -42,11 +42,122 @@ let appConfig = {};
 
 // DOM Elements
 const calendarContainer = document.getElementById('calendar-container');
-const calendarPlaceholder = document.getElementById('calendar-placeholder');
 const eventsList = document.getElementById('events-list');
 const rsvpModal = document.getElementById('rsvp-modal');
 const rsvpForm = document.getElementById('rsvp-form');
 const attendanceSummary = document.getElementById('attendance-summary');
+const themeToggle = document.getElementById('theme-toggle');
+const appTitle = document.querySelector('.app-title');
+const headerSubtitle = document.querySelector('.header-subtitle');
+const instructionsBtn = document.getElementById('instructions-btn');
+const supportLines = document.querySelectorAll('.support-line');
+
+const THEME_STORAGE_KEY = 'event-attendance-theme';
+
+const THEME_CONTENT = {
+    funky: {
+        title: "<span class='emoji' aria-hidden='true'>💾</span> Leuven Taiwanese Events <span class='emoji' aria-hidden='true'>🚀</span>",
+        subtitle: 'Plug into the community pulse, one meetup at a time.',
+        instructions: '🕹️',
+        support: [
+            '⚙️ Hosting this app takes real-world resources—chip in if you can.',
+            '💾 Every donation fuels uptime and new experiments.'
+        ],
+        toggleIcon: '🥸'
+    },
+    classic: {
+        title: 'Leuven Taiwanese Events Calendar',
+        subtitle: '',
+        instructions: '?',
+        support: [
+            'Hosting this web app costs money—your support keeps it running.',
+            'All donations go directly to operating expenses.'
+        ],
+        toggleIcon: '👾'
+    }
+};
+
+function getStoredTheme() {
+    try {
+        return localStorage.getItem(THEME_STORAGE_KEY);
+    } catch (error) {
+        console.warn('Unable to read theme preference:', error);
+        return null;
+    }
+}
+
+function storeTheme(theme) {
+    try {
+        localStorage.setItem(THEME_STORAGE_KEY, theme);
+    } catch (error) {
+        console.warn('Unable to persist theme preference:', error);
+    }
+}
+
+function applyTheme(theme) {
+    const isFunky = theme !== 'classic';
+    document.body.classList.toggle('theme-funky', isFunky);
+    document.body.classList.toggle('theme-classic', !isFunky);
+
+    const content = isFunky ? THEME_CONTENT.funky : THEME_CONTENT.classic;
+
+    if (appTitle && content.title) {
+        appTitle.innerHTML = content.title;
+    }
+
+    if (headerSubtitle) {
+        if (content.subtitle) {
+            headerSubtitle.textContent = content.subtitle;
+            headerSubtitle.hidden = false;
+        } else {
+            headerSubtitle.textContent = '';
+            headerSubtitle.hidden = true;
+        }
+    }
+
+    if (instructionsBtn && content.instructions) {
+        instructionsBtn.textContent = content.instructions;
+    }
+
+    if (themeToggle && content.toggleIcon) {
+        themeToggle.innerHTML = `<span aria-hidden="true">${content.toggleIcon}</span>`;
+    }
+
+    if (supportLines && supportLines.length) {
+        supportLines.forEach((line, index) => {
+            const lineText = content.support[index] || '';
+            line.textContent = lineText;
+            line.hidden = lineText === '';
+        });
+    }
+
+    if (themeToggle) {
+        themeToggle.setAttribute('aria-pressed', isFunky ? 'true' : 'false');
+        const nextLabel = isFunky ? 'Switch to classic theme' : 'Switch to funky theme';
+        themeToggle.setAttribute('aria-label', nextLabel);
+        themeToggle.setAttribute('title', nextLabel);
+    }
+}
+
+function setupThemeToggle() {
+    const savedTheme = getStoredTheme();
+    const initialTheme = savedTheme === 'classic' ? 'classic' : 'funky';
+    applyTheme(initialTheme);
+    if (!savedTheme) {
+        storeTheme(initialTheme);
+    }
+
+    if (!themeToggle) {
+        return;
+    }
+
+    themeToggle.addEventListener('click', () => {
+        const currentTheme = document.body.classList.contains('theme-funky') ? 'funky' : 'classic';
+        const nextTheme = currentTheme === 'funky' ? 'classic' : 'funky';
+        applyTheme(nextTheme);
+        storeTheme(nextTheme);
+    });
+}
 
 // Initialize the app when DOM is loaded
 if ('serviceWorker' in navigator) {
@@ -64,6 +175,7 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 function initializeApp() {
+    setupThemeToggle();
     
     // Load configuration first
     loadConfig().then(() => {
@@ -141,8 +253,9 @@ async function loadConfig() {
 
 // Set up calendar based on configuration
 function setupCalendar() {
-    const placeholder = document.getElementById('calendar-placeholder');
-    const addToCalendarBtn = document.getElementById('add-to-calendar-btn');
+    if (!calendarContainer) {
+        return;
+    }
 
     if (appConfig.calendars && appConfig.calendars.length > 0) {
         const updateCalendarView = () => {
@@ -182,7 +295,7 @@ function setupCalendar() {
                 }
             }
 
-            placeholder.innerHTML = `
+            calendarContainer.innerHTML = `
                 <iframe src="${finalCalendarUrl}" 
                         style="border: 0" 
                         width="100%" 
@@ -193,10 +306,8 @@ function setupCalendar() {
             `;
         };
 
-        // Initial setup
         updateCalendarView();
 
-        // Update on resize
         window.addEventListener('resize', updateCalendarView);
 
         const joinGroupLink = document.getElementById('join-group-link');
@@ -206,6 +317,9 @@ function setupCalendar() {
 
         const addToCalendarDropdown = document.getElementById('add-to-calendar-dropdown');
         if (addToCalendarDropdown) {
+            if (addToCalendarDropdown.parentElement) {
+                addToCalendarDropdown.parentElement.style.display = '';
+            }
             appConfig.calendars.forEach(calendar => {
                 if (calendar.enabled) {
                     try {
@@ -226,18 +340,18 @@ function setupCalendar() {
         }
 
     } else {
-        placeholder.innerHTML = `
+        calendarContainer.innerHTML = `
             <div class="calendar-setup">
                 <h3>Calendar Integration</h3>
                 <p>Calendar integration is not configured. Please update the configuration file to enable calendar display.</p>
             </div>
         `;
         const addToCalendarDropdown = document.getElementById('add-to-calendar-dropdown');
-        if (addToCalendarDropdown) {
+        if (addToCalendarDropdown && addToCalendarDropdown.parentElement) {
             addToCalendarDropdown.parentElement.style.display = 'none';
         }
-        }
     }
+}
     
     function populateCalendarFilter() {
         const calendarFilterContainer = document.querySelector('.calendar-filter-container');
