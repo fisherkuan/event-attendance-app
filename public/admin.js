@@ -43,7 +43,7 @@ function applyTheme(theme) {
 
 function setupThemeToggle() {
     const savedTheme = getStoredTheme();
-    const initialTheme = savedTheme === 'classic' ? 'classic' : 'funky';
+    const initialTheme = savedTheme === 'funky' ? 'funky' : 'classic';
     applyTheme(initialTheme);
     if (!savedTheme) {
         storeTheme(initialTheme);

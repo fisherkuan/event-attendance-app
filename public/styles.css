@@ -1550,10 +1550,15 @@ body.theme-funky .modal-content {
     color: var(--primary-text);
 }
 
+body.theme-funky .modal-header {
+    border-bottom: 1px solid rgba(56, 189, 248, 0.18);
+}
+
 body.theme-funky .modal-header h3 {
     font-family: 'Press Start 2P', 'Raleway', sans-serif;
     font-size: clamp(0.95rem, 2vw, 1.1rem);
     letter-spacing: 1.5px;
+    color: var(--primary-text);
 }
 
 body.theme-funky .close-btn {
@@ -1765,6 +1770,28 @@ body.theme-funky .attendance-limit-form .btn-secondary:disabled {
     background: rgba(15, 23, 42, 0.65);
     color: rgba(148, 163, 184, 0.55);
     border-color: rgba(148, 163, 184, 0.25);
+}
+
+body.theme-funky #event-details {
+    background: rgba(4, 7, 21, 0.75);
+    border: 1px solid rgba(56, 189, 248, 0.18);
+    border-radius: 14px;
+    padding: 18px;
+    margin-bottom: 20px;
+}
+
+body.theme-funky #event-details h4,
+body.theme-funky #modal-event-title,
+body.theme-funky #remove-modal-event-title {
+    color: var(--primary-text);
+    font-family: 'Space Grotesk', 'Noto Sans', sans-serif;
+}
+
+body.theme-funky #event-details p,
+body.theme-funky #remove-modal-event-date,
+body.theme-funky #modal-event-date,
+body.theme-funky #modal-event-description {
+    color: var(--secondary-text);
 }
 
 body.theme-funky .rsvp-add-btn-small:disabled,

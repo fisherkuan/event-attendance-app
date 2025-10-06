@@ -141,7 +141,7 @@ function applyTheme(theme) {
 
 function setupThemeToggle() {
     const savedTheme = getStoredTheme();
-    const initialTheme = savedTheme === 'classic' ? 'classic' : 'funky';
+    const initialTheme = savedTheme === 'funky' ? 'funky' : 'classic';
     applyTheme(initialTheme);
     if (!savedTheme) {
         storeTheme(initialTheme);
@@ -198,7 +198,7 @@ function initializeApp() {
 
 // Set up WebSocket connection
 function setupWebSocket() {
-    const wsProtocol = window.location.protocol === 'https' ? 'wss' : 'ws';
+    const wsProtocol = window.location.protocol === 'https:' ? 'wss' : 'ws';
     const wsUrl = `${wsProtocol}://${window.location.host}`;
     const ws = new WebSocket(wsUrl);
 
@@ -392,7 +392,12 @@ function loadEvents() {
     const timeRange = document.getElementById('time-range')?.value || appConfig.events?.defaultTimeRange || 'future';
     
     // Load events from the server with time range filter
-    fetch(`${API_BASE_URL}/api/events?timeRange=${timeRange}`)
+    fetch(`${API_BASE_URL}/api/events?timeRange=${timeRange}`, {
+        cache: 'no-store',
+        headers: {
+            'Cache-Control': 'no-cache'
+        }
+    })
         .then(response => response.json())
         .then(events => {
             currentEvents = events;
