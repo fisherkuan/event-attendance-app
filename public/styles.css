@@ -985,9 +985,69 @@ section h2 {
     }
 
     .app-header {
-        padding: 40px 20px;
+        padding: 0 !important;
+        margin: 0 !important;
+        background: none !important;
+        display: block !important;
+        min-height: 0 !important;
+        height: 0 !important;
+        overflow: visible !important;
+        border: none !important;
+        box-shadow: none !important;
     }
-    
+
+    body.theme-classic .app-header,
+    body.theme-funky .app-header {
+        background: none;
+    }
+
+    body.theme-funky .app-header {
+        padding: 0 !important;
+        margin: 0 !important;
+        border: none !important;
+        border-radius: 0 !important;
+        box-shadow: none !important;
+        backdrop-filter: none !important;
+        overflow: visible !important;
+        background: none !important;
+        display: block !important;
+        text-align: right !important;
+    }
+
+    body.theme-funky .app-header::before,
+    body.theme-funky .app-header::after {
+        display: none !important;
+        content: none !important;
+    }
+
+    .app-header h1,
+    .header-subtitle {
+        display: none !important;
+    }
+
+    .header-controls {
+        position: fixed !important;
+        top: 12px !important;
+        right: 12px !important;
+        width: auto !important;
+        display: flex !important;
+        justify-content: flex-end !important;
+        gap: 8px !important;
+        margin: 0 !important;
+        z-index: 20 !important;
+    }
+
+    body.theme-funky .header-controls {
+        margin: 0 !important;
+        align-self: auto !important;
+    }
+
+    .theme-toggle-btn {
+        width: 44px;
+        height: 44px;
+        font-size: 1.2rem;
+    }
+
     .calendar-filter-container {
         flex-wrap: nowrap;
         gap: 8px;

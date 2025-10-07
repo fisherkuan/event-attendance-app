@@ -51,12 +51,14 @@ const appTitle = document.querySelector('.app-title');
 const headerSubtitle = document.querySelector('.header-subtitle');
 const instructionsBtn = document.getElementById('instructions-btn');
 const supportLines = document.querySelectorAll('.support-line');
+const MOBILE_VIEW_QUERY = window.matchMedia('(max-width: 480px)');
 
 const THEME_STORAGE_KEY = 'event-attendance-theme';
 
 const THEME_CONTENT = {
     funky: {
         title: "<span class='emoji' aria-hidden='true'>💾</span> Leuven Taiwanese Events <span class='emoji' aria-hidden='true'>🚀</span>",
+        mobileTitle: "<span class='emoji' aria-hidden='true'>💾</span> Leuven TW Events <span class='emoji' aria-hidden='true'>🚀</span>",
         subtitle: 'Plug into the community pulse, one meetup at a time.',
         instructions: '🕹️',
         support: [
@@ -67,6 +69,7 @@ const THEME_CONTENT = {
     },
     classic: {
         title: 'Leuven Taiwanese Events Calendar',
+        mobileTitle: 'Leuven TW Events',
         subtitle: '',
         instructions: '?',
         support: [
@@ -101,19 +104,7 @@ function applyTheme(theme) {
 
     const content = isFunky ? THEME_CONTENT.funky : THEME_CONTENT.classic;
 
-    if (appTitle && content.title) {
-        appTitle.innerHTML = content.title;
-    }
-
-    if (headerSubtitle) {
-        if (content.subtitle) {
-            headerSubtitle.textContent = content.subtitle;
-            headerSubtitle.hidden = false;
-        } else {
-            headerSubtitle.textContent = '';
-            headerSubtitle.hidden = true;
-        }
-    }
+    updateHeaderContent(content);
 
     if (instructionsBtn && content.instructions) {
         instructionsBtn.textContent = content.instructions;
@@ -137,6 +128,42 @@ function applyTheme(theme) {
         themeToggle.setAttribute('aria-label', nextLabel);
         themeToggle.setAttribute('title', nextLabel);
     }
+}
+
+function isMobileViewport() {
+    return MOBILE_VIEW_QUERY.matches;
+}
+
+function updateHeaderContent(content) {
+    if (!content) {
+        return;
+    }
+
+    if (appTitle) {
+        const titleMarkup = isMobileViewport() && content.mobileTitle ? content.mobileTitle : content.title;
+        appTitle.innerHTML = titleMarkup || '';
+    }
+
+    if (headerSubtitle) {
+        const shouldShowSubtitle = Boolean(content.subtitle) && !isMobileViewport();
+        headerSubtitle.textContent = shouldShowSubtitle ? content.subtitle : '';
+        headerSubtitle.hidden = !shouldShowSubtitle;
+    }
+}
+
+function getCurrentThemeKey() {
+    return document.body.classList.contains('theme-funky') ? 'funky' : 'classic';
+}
+
+function handleViewportChange() {
+    const currentContent = THEME_CONTENT[getCurrentThemeKey()];
+    updateHeaderContent(currentContent);
+}
+
+if (typeof MOBILE_VIEW_QUERY.addEventListener === 'function') {
+    MOBILE_VIEW_QUERY.addEventListener('change', handleViewportChange);
+} else if (typeof MOBILE_VIEW_QUERY.addListener === 'function') {
+    MOBILE_VIEW_QUERY.addListener(handleViewportChange);
 }
 
 function setupThemeToggle() {
