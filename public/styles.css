@@ -888,18 +888,162 @@ section h2 {
     display: none !important;
 }
 
+/* Scroll-snap container for mobile */
+.scroll-snap-container {
+    /* Desktop: no special behavior */
+    display: contents;
+}
+
+/* Page indicators */
+.page-indicators {
+    display: none; /* Hidden on desktop */
+}
+
 /* Responsive design */
 @media (max-width: 768px) {
     .container {
         padding: 0;
+        max-width: none;
+        width: 100%;
     }
 
+    /* Enable scroll-snap container on mobile */
+    .scroll-snap-container {
+        display: flex;
+        flex-direction: row;
+        height: 100vh;
+        overflow-x: auto;
+        overflow-y: hidden;
+        scroll-snap-type: x mandatory;
+        -webkit-overflow-scrolling: touch;
+        overscroll-behavior: contain;
+    }
+    
+    .scroll-snap-container > main {
+        display: flex;
+        flex-direction: row;
+        flex: 0 0 auto;
+        min-height: 100vh;
+        margin-bottom: 0;
+    }
+
+    /* Make sections full-screen snap points */
     section {
+        scroll-snap-align: start;
+        scroll-snap-stop: always;
+        min-height: 100vh;
+        min-width: 100vw;
+        width: 100vw;
+        flex: 0 0 100vw;
+        display: flex;
+        flex-direction: column;
         padding: 24px 20px;
-        margin-left: 0;
-        margin-right: 0;
+        margin: 0;
         border-radius: 0;
         box-shadow: none;
+        border: none;
+    }
+
+    /* Calendar section full screen */
+    .calendar-section {
+        background: white;
+        padding-top: 24px;
+        justify-content: flex-start;
+    }
+
+    /* Events section full screen */
+    .events-section {
+        background: white;
+        overflow: hidden;
+    }
+
+    .events-section h2 {
+        flex-shrink: 0;
+    }
+
+    .event-filters {
+        flex-shrink: 0;
+    }
+
+    #events-list {
+        flex: 1;
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
+        margin-bottom: 80px; /* Space for page indicators */
+    }
+
+    /* Bottom banner full screen */
+    .bottom-banner {
+        scroll-snap-align: start;
+        scroll-snap-stop: always;
+        min-height: 100vh;
+        min-width: 100vw;
+        width: 100vw;
+        flex: 0 0 100vw;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0;
+        padding: 0;
+        border-radius: 0;
+    }
+    
+    body.theme-funky .bottom-banner {
+        margin-top: 0;
+        border-radius: 0;
+        border: none;
+        box-shadow: none;
+        backdrop-filter: none;
+        background: linear-gradient(135deg, rgba(56, 189, 248, 0.85), rgba(124, 58, 237, 0.92));
+        padding-top: 0;
+    }
+
+    .bottom-banner .banner-content {
+        width: 100%;
+        max-width: 500px;
+        margin: 0 auto;
+        padding: 16px 20px 32px;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        height: 100%;
+    }
+
+    /* Page indicators styling */
+    .page-indicators {
+        display: flex;
+        position: fixed;
+        bottom: 20px;
+        left: 50%;
+        transform: translateX(-50%);
+        gap: 12px;
+        z-index: 100;
+        padding: 10px 16px;
+        background: rgba(0, 0, 0, 0.3);
+        backdrop-filter: blur(10px);
+        border-radius: 20px;
+    }
+
+    .page-dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: rgba(255, 255, 255, 0.4);
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+
+    .page-dot.active {
+        width: 10px;
+        height: 10px;
+        background: rgba(255, 255, 255, 0.95);
+        box-shadow: 0 0 8px rgba(255, 255, 255, 0.5);
+    }
+
+    /* Ensure theme toggle stays on top */
+    .header-controls {
+        z-index: 200 !important;
     }
 
     .app-header,
@@ -974,8 +1118,15 @@ section h2 {
         flex: 1 1 100%;
     }
 
+    #calendar-container {
+        flex: 1;
+        overflow: hidden;
+        margin-bottom: 80px; /* Space for page indicators */
+    }
+
     #calendar-container iframe {
-        height: 400px;
+        height: 100%;
+        min-height: 400px;
     }
 }
 
@@ -1679,13 +1830,15 @@ body.theme-funky .instructions-btn:hover {
     box-shadow: 0 24px 48px rgba(56, 189, 248, 0.3);
 }
 
-body.theme-funky .bottom-banner {
-    background: linear-gradient(135deg, rgba(56, 189, 248, 0.18), rgba(124, 58, 237, 0.18));
-    border: 2px solid var(--panel-border);
-    border-radius: 26px;
-    box-shadow: var(--panel-shadow);
-    backdrop-filter: blur(8px);
-    margin-top: clamp(42px, 10vw, 80px);
+@media (min-width: 769px) {
+    body.theme-funky .bottom-banner {
+        background: linear-gradient(135deg, rgba(56, 189, 248, 0.18), rgba(124, 58, 237, 0.18));
+        border: 2px solid var(--panel-border);
+        border-radius: 26px;
+        box-shadow: var(--panel-shadow);
+        backdrop-filter: blur(8px);
+        margin-top: clamp(42px, 10vw, 80px);
+    }
 }
 
 body.theme-funky .support-buttons {
@@ -1926,6 +2079,61 @@ body.theme-funky .instructions-btn:focus,
 body.theme-funky .rsvp-btn:focus {
     outline: none;
     box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.35);
+}
+
+/* Funky theme page indicators */
+@media (max-width: 768px) {
+    body.theme-funky .page-indicators {
+        background: rgba(5, 5, 23, 0.7);
+        border: 1px solid rgba(56, 189, 248, 0.3);
+    }
+
+    body.theme-funky .page-dot {
+        background: rgba(56, 189, 248, 0.4);
+    }
+
+    body.theme-funky .page-dot.active {
+        background: var(--accent);
+        box-shadow: 0 0 12px rgba(20, 241, 149, 0.6);
+    }
+
+    body.theme-funky .calendar-section {
+        background: var(--bg-color);
+    }
+
+    body.theme-funky .events-section {
+        background: var(--bg-color);
+    }
+
+    .bottom-banner {
+        margin-top: 0;
+        padding: 0;
+        border-radius: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .bottom-banner .banner-content {
+        margin: 0 auto;
+        padding: 16px 20px 32px;
+        width: 100%;
+        max-width: 500px;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        height: 100%;
+    }
+
+    body.theme-funky .bottom-banner {
+        margin-top: 0;
+        border: none;
+        border-radius: 0;
+        box-shadow: none;
+        backdrop-filter: none;
+        background: linear-gradient(135deg, rgba(56, 189, 248, 0.18), rgba(124, 58, 237, 0.18));
+    }
 }
 
 @media (max-width: 640px) {

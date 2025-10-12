@@ -52,6 +52,7 @@ const headerSubtitle = document.querySelector('.header-subtitle');
 const instructionsBtn = document.getElementById('instructions-btn');
 const supportLines = document.querySelectorAll('.support-line');
 const MOBILE_VIEW_QUERY = window.matchMedia('(max-width: 480px)');
+const TABLET_VIEW_QUERY = window.matchMedia('(max-width: 768px)');
 
 const THEME_STORAGE_KEY = 'event-attendance-theme';
 
@@ -220,7 +221,64 @@ function initializeApp() {
 
         // Set up WebSocket connection
         setupWebSocket();
+
+        // Set up scroll-snap page indicators
+        setupScrollSnapIndicators();
     });
+}
+
+// Scroll-snap page indicators for mobile
+function setupScrollSnapIndicators() {
+    // Only activate on mobile/tablet
+    if (!TABLET_VIEW_QUERY.matches) {
+        return;
+    }
+
+    const scrollContainer = document.querySelector('.scroll-snap-container');
+    const pageDots = document.querySelectorAll('.page-dot');
+    
+    if (!scrollContainer || !pageDots.length) {
+        return;
+    }
+
+    // Update active dot based on scroll position
+    const updateActiveDot = debounce(() => {
+        const scrollLeft = scrollContainer.scrollLeft;
+        const windowWidth = window.innerWidth;
+
+        // Calculate which page we're on (0, 1, or 2)
+        const currentPage = Math.round(scrollLeft / windowWidth);
+        const maxPageIndex = pageDots.length - 1;
+        const clampedPage = Math.max(0, Math.min(maxPageIndex, currentPage));
+        
+        // Update dot active states
+        pageDots.forEach((dot, index) => {
+            if (index === clampedPage) {
+                dot.classList.add('active');
+            } else {
+                dot.classList.remove('active');
+            }
+        });
+    }, 100);
+
+    // Listen to scroll events
+    scrollContainer.addEventListener('scroll', updateActiveDot);
+    window.addEventListener('resize', updateActiveDot);
+
+    // Click handler for dots - scroll to page
+    pageDots.forEach((dot, index) => {
+        dot.addEventListener('click', () => {
+            const targetScrollLeft = index * window.innerWidth;
+            scrollContainer.scrollTo({
+                left: targetScrollLeft,
+                top: 0,
+                behavior: 'smooth'
+            });
+        });
+    });
+
+    // Initial update
+    updateActiveDot();
 }
 
 // Set up WebSocket connection
