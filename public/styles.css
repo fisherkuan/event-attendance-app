@@ -80,7 +80,7 @@ h1, h2, h3, h4, h5, h6 {
 
 .theme-toggle-btn {
     appearance: none;
-    border: 2px solid rgba(56, 189, 248, 0.45);
+    border: 2px solid #4338ca;
     background: radial-gradient(circle at 35% 25%, rgba(56, 189, 248, 0.45), rgba(5, 5, 23, 0.92));
     color: #14f195;
     width: 52px;
@@ -99,7 +99,7 @@ h1, h2, h3, h4, h5, h6 {
 
 .theme-toggle-btn:hover {
     transform: translateY(-2px);
-    box-shadow: 0 8px 18px rgba(102, 126, 234, 0.25);
+    box-shadow: 0 8px 18px rgba(102, 126, 234, 0.35);
 }
 
 .theme-toggle-btn:focus {
@@ -108,11 +108,11 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 body.theme-classic .theme-toggle-btn {
-    border-color: rgba(56, 189, 248, 0.45);
+    border-color: #4338ca;
     background: radial-gradient(circle at 35% 25%, rgba(56, 189, 248, 0.45), rgba(5, 5, 23, 0.92));
     color: #14f195;
     box-shadow: 0 14px 26px rgba(56, 189, 248, 0.25);
-    text-shadow: 0 0 8px rgba(56, 189, 248, 0.45);
+    text-shadow: 0 0 8px rgba(56, 189, 248, 0.35);
 }
 
 body.theme-classic .header-subtitle {
