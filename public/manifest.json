@@ -1,7 +1,7 @@
 
 {
-  "name": "Taiwanese Leuven SportsCenter",
-  "short_name": "TLSC",
+  "name": "Leuven TW Calendar",
+  "short_name": "LTWCal",
   "start_url": "/index.html",
   "display": "standalone",
   "background_color": "#ffffff",
