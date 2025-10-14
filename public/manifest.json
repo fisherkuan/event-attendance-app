@@ -1,7 +1,7 @@
 
 {
-  "name": "Leuven TW Calendar",
-  "short_name": "LTWCal",
+  "name": "Leuven TW Events",
+  "short_name": "LTWEvents",
   "start_url": "/index.html",
   "display": "standalone",
   "background_color": "#ffffff",

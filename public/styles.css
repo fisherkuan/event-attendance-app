@@ -390,6 +390,40 @@ section h2 {
     margin-top: 15px;
 }
 
+.event-footer-link {
+    justify-content: flex-end;
+}
+
+.event-link-button {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 18px;
+    border-radius: 999px;
+    background: linear-gradient(135deg, #4299e1 0%, #3182ce 100%);
+    color: #fff;
+    text-decoration: none;
+    font-weight: 600;
+    border: none;
+    transition: transform 0.2s, box-shadow 0.2s;
+    margin-left: auto;
+}
+
+.event-link-button:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(66, 153, 225, 0.35);
+    color: #fff;
+}
+
+.event-link-button:focus {
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(66, 153, 225, 0.45);
+}
+
+.event-link-button .icon {
+    font-size: 1.1rem;
+}
+
 .attendance-info {
     position: relative;
     cursor: pointer;

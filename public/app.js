@@ -30,6 +30,30 @@ function escapeAttribute(value) {
     return escapeHtml(value).replace(/\n/g, '&#10;');
 }
 
+function extractEventLink(description) {
+    if (typeof description !== 'string' || description.length === 0) {
+        return null;
+    }
+
+    const match = description.match(/link:?\s*(https?:\/\/[^\s]+)/i);
+    if (!match) {
+        return null;
+    }
+
+    const potentialUrl = match[1].trim();
+
+    try {
+        const validatedUrl = new URL(potentialUrl);
+        if (validatedUrl.protocol === 'http:' || validatedUrl.protocol === 'https:') {
+            return validatedUrl.href;
+        }
+    } catch (error) {
+        return null;
+    }
+
+    return null;
+}
+
 // Event Attendance App - Main JavaScript File
 
 // Configuration
@@ -69,7 +93,7 @@ const THEME_CONTENT = {
         toggleIcon: '🥸'
     },
     classic: {
-        title: 'Leuven Taiwanese Events Calendar',
+        title: 'Leuven Taiwanese Events',
         mobileTitle: 'Leuven TW Events',
         subtitle: '',
         instructions: '?',
@@ -527,31 +551,53 @@ function displayEvents() {
         const sanitizedTitle = escapeHtml(event.title);
         const sanitizedDescription = escapeHtml(event.description);
         const sanitizedLocation = escapeHtml(event.location);
-        const attendeesList = Array.isArray(event.attendees) ? event.attendees.map(escapeHtml) : [];
-        const attendanceInfo = attendeesList.join('\n');
-        const attendanceInfoAttr = escapeAttribute(attendanceInfo);
+        const eventLink = extractEventLink(event.description);
 
-        const isFull = event.attendance_limit !== null && event.attendingCount >= event.attendance_limit;
+        let footerContent = '';
+        let footerClasses = 'event-footer';
 
-        let attendanceText = `${event.attendingCount} Attending`;
-        if (event.attendance_limit !== null) {
-            attendanceText += ` / ${event.attendance_limit}`;
-        }
-        const sanitizedAttendanceText = escapeHtml(attendanceText);
-
-        // Show different buttons based on whether it's a past or future event
-        const rsvpButtons = isPastEvent
-            ? '<div class="rsvp-disabled">Past Event - RSVP Closed</div>'
-            : `
-                <div class="event-rsvp-buttons">
-                    <button class="rsvp-add-btn-small ${isFull ? 'rsvp-full-btn' : ''}" data-event-id="${sanitizedEventId}" data-action="add" ${isFull ? 'disabled' : ''}>
-                        <span class="icon">＋</span>
-                    </button>
-                    <button class="rsvp-remove-btn-small" data-event-id="${sanitizedEventId}" data-action="remove" ${event.attendingCount === 0 ? 'disabled' : ''}>
-                        <span class="icon">－</span>
-                    </button>
-                </div>
+        if (eventLink) {
+            footerClasses += ' event-footer-link';
+            const sanitizedEventLink = escapeAttribute(eventLink);
+            footerContent = `
+                    <a class="event-link-button" href="${sanitizedEventLink}" target="_blank" rel="noopener noreferrer">
+                        <span class="icon" aria-hidden="true">🔗</span>
+                        <span>Open Link</span>
+                    </a>
             `;
+        } else {
+            const attendeesList = Array.isArray(event.attendees) ? event.attendees.map(escapeHtml) : [];
+            const attendanceInfo = attendeesList.join('\n');
+            const attendanceInfoAttr = escapeAttribute(attendanceInfo);
+
+            const isFull = event.attendance_limit !== null && event.attendingCount >= event.attendance_limit;
+
+            let attendanceText = `${event.attendingCount} Attending`;
+            if (event.attendance_limit !== null) {
+                attendanceText += ` / ${event.attendance_limit}`;
+            }
+            const sanitizedAttendanceText = escapeHtml(attendanceText);
+
+            const rsvpButtons = isPastEvent
+                ? '<div class="rsvp-disabled">Past Event - RSVP Closed</div>'
+                : `
+                    <div class="event-rsvp-buttons">
+                        <button class="rsvp-add-btn-small ${isFull ? 'rsvp-full-btn' : ''}" data-event-id="${sanitizedEventId}" data-action="add" ${isFull ? 'disabled' : ''}>
+                            <span class="icon">＋</span>
+                        </button>
+                        <button class="rsvp-remove-btn-small" data-event-id="${sanitizedEventId}" data-action="remove" ${event.attendingCount === 0 ? 'disabled' : ''}>
+                            <span class="icon">－</span>
+                        </button>
+                    </div>
+                `;
+
+            footerContent = `
+                    <div class="attendance-info" title="${attendanceInfoAttr}">
+                        <span>${sanitizedAttendanceText}</span>
+                    </div>
+                    ${rsvpButtons}
+            `;
+        }
         
         return `
             <div class="event-card" data-event-id="${sanitizedEventId}">
@@ -559,11 +605,8 @@ function displayEvents() {
                 <p class="event-date">${sanitizedFormattedDate}</p>
                 <p class="event-description">${sanitizedDescription}</p>
                 ${event.location ? `<p class="event-location">📍 ${sanitizedLocation}</p>` : ''}
-                <div class="event-footer">
-                    <div class="attendance-info" title="${attendanceInfoAttr}">
-                        <span>${sanitizedAttendanceText}</span>
-                    </div>
-                    ${rsvpButtons}
+                <div class="${footerClasses}">
+                    ${footerContent}
                 </div>
             </div>
         `;

@@ -656,6 +656,22 @@ body.theme-funky .event-footer {
     padding-top: 18px;
 }
 
+body.theme-funky .event-link-button {
+    background: linear-gradient(135deg, rgba(20, 241, 149, 0.92) 0%, rgba(56, 189, 248, 0.92) 100%);
+    color: #050517;
+    box-shadow: 0 12px 26px rgba(56, 189, 248, 0.28);
+}
+
+body.theme-funky .event-link-button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 16px 32px rgba(56, 189, 248, 0.35);
+    color: #050517;
+}
+
+body.theme-funky .event-link-button:focus {
+    box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.45);
+}
+
 body.theme-funky .support-header {
     margin-top: 28px;
 }
