@@ -78,6 +78,84 @@ function broadcast(data) {
     });
 }
 
+function unfoldIcsValue(value) {
+    if (typeof value !== 'string') {
+        return '';
+    }
+
+    return value
+        .replace(/\r\n\s/g, '') // Remove line folding per RFC 5545
+        .replace(/\n\s/g, '');
+}
+
+function decodeIcsText(value) {
+    if (typeof value !== 'string') {
+        return '';
+    }
+
+    return value
+        .replace(/\\n/gi, '\n')
+        .replace(/\\,/g, ',')
+        .replace(/\\;/g, ';')
+        .replace(/\\\\/g, '\\');
+}
+
+function decodeHtmlEntities(value) {
+    if (typeof value !== 'string') {
+        return '';
+    }
+
+    return value
+        .replace(/&quot;/gi, '"')
+        .replace(/&#39;/gi, '\'')
+        .replace(/&nbsp;/gi, ' ')
+        .replace(/&lt;/gi, '<')
+        .replace(/&gt;/gi, '>')
+        .replace(/&amp;/gi, '&');
+}
+
+function sanitizeHtmlText(value) {
+    if (typeof value !== 'string') {
+        return '';
+    }
+
+    let text = value;
+
+    text = text.replace(/<(br|hr)\s*\/?>/gi, '\n');
+    text = text.replace(/<\/p\s*>/gi, '\n');
+    text = text.replace(/<\/div\s*>/gi, '\n');
+
+    text = text.replace(/<a\s+[^>]*href=["']([^"']+)["'][^>]*>(.*?)<\/a>/gi, (match, href, linkText) => {
+        const trimmedLinkText = (linkText || '').trim();
+        if (trimmedLinkText && trimmedLinkText !== href) {
+            return `${trimmedLinkText} (${href})`;
+        }
+        return href;
+    });
+
+    text = text.replace(/<[^>]+>/g, '');
+
+    return decodeHtmlEntities(text)
+        .replace(/\r/g, '')
+        .replace(/[ \t]+\n/g, '\n')
+        .replace(/\n{3,}/g, '\n\n')
+        .replace(/^\n+/, '')
+        .replace(/\n+$/, '')
+        .trim();
+}
+
+function extractIcsField(block, fieldName) {
+    const regex = new RegExp(`${fieldName}:([\\s\\S]*?)(?=\\n[A-Z][A-Z0-9-]*:|$)`);
+    const match = block.match(regex);
+    if (!match) {
+        return '';
+    }
+
+    const unfolded = unfoldIcsValue(match[1]);
+    const decoded = decodeIcsText(unfolded);
+    return sanitizeHtmlText(decoded);
+}
+
 // Initialize database schema
 async function initializeDatabase() {
     const client = await pool.connect();
@@ -156,13 +234,12 @@ async function fetchCalendarEvents() {
                 const summaryMatch = block.match(/SUMMARY:(.*)/);
                 const dtstartMatch = block.match(/DTSTART(?:;[^:]+)?:([0-9T]+)/);
                 const dtendMatch = block.match(/DTEND(?:;[^:]+)?:([0-9T]+)/);
-                const descMatch = block.match(/DESCRIPTION:(.*)/);
-                const locMatch = block.match(/LOCATION:(.*)/);
                 const uidMatch = block.match(/UID:(.*)/);
+                const description = extractIcsField(block, 'DESCRIPTION');
+                const location = extractIcsField(block, 'LOCATION');
                 let attendanceLimitFromDescription = undefined; // Use undefined to signify "not specified"
 
-                if (descMatch) {
-                    const description = descMatch[1].trim();
+                if (description) {
                     const limitMatch = description.match(/limit:?\s*(\d+)/i); // Only capture numbers
                     if (limitMatch) {
                         attendanceLimitFromDescription = parseInt(limitMatch[1], 10); // A number
@@ -199,8 +276,8 @@ async function fetchCalendarEvents() {
                         title: summaryMatch[1].replace(/\n/g, '\n').trim(),
                         date: start,
                         endDate: end,
-                        description: descMatch ? descMatch[1].replace(/\n/g, '\n').trim() : '',
-                        location: locMatch ? locMatch[1].replace(/\n/g, '\n').trim() : '',
+                        description,
+                        location,
                         source: calendarId,
                         attendance_limit_from_description: attendanceLimitFromDescription
                     });

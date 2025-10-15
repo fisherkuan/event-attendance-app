@@ -30,25 +30,44 @@ function escapeAttribute(value) {
     return escapeHtml(value).replace(/\n/g, '&#10;');
 }
 
-function extractEventLink(description) {
-    if (typeof description !== 'string' || description.length === 0) {
+function sanitizeUrl(rawUrl) {
+    if (typeof rawUrl !== 'string' || rawUrl.length === 0) {
         return null;
     }
 
-    const match = description.match(/link:?\s*(https?:\/\/[^\s]+)/i);
-    if (!match) {
-        return null;
-    }
-
-    const potentialUrl = match[1].trim();
+    const trimmed = rawUrl.trim().replace(/[\s"'<>)]*$/, '');
 
     try {
-        const validatedUrl = new URL(potentialUrl);
-        if (validatedUrl.protocol === 'http:' || validatedUrl.protocol === 'https:') {
-            return validatedUrl.href;
+        const validated = new URL(trimmed);
+        if (validated.protocol === 'http:' || validated.protocol === 'https:') {
+            return validated.href;
         }
     } catch (error) {
         return null;
+    }
+
+    return null;
+}
+
+function extractEventLink(value) {
+    if (typeof value !== 'string' || value.length === 0) {
+        return null;
+    }
+
+    const linkMatch = value.match(/link:?\s*(https?:\/\/\S+)/i);
+    if (linkMatch) {
+        const sanitized = sanitizeUrl(linkMatch[1]);
+        if (sanitized) {
+            return sanitized;
+        }
+    }
+
+    const fallbackMatch = value.match(/https?:\/\/\S+/i);
+    if (fallbackMatch) {
+        const sanitized = sanitizeUrl(fallbackMatch[0]);
+        if (sanitized) {
+            return sanitized;
+        }
     }
 
     return null;
@@ -549,9 +568,13 @@ function displayEvents() {
 
         const sanitizedEventId = escapeAttribute(event.id);
         const sanitizedTitle = escapeHtml(event.title);
-        const sanitizedDescription = escapeHtml(event.description);
-        const sanitizedLocation = escapeHtml(event.location);
-        const eventLink = extractEventLink(event.description);
+
+        const descriptionText = typeof event.description === 'string' ? event.description : '';
+        const sanitizedDescription = escapeHtml(descriptionText).replace(/\n/g, '<br>');
+        const eventLink = extractEventLink(descriptionText);
+
+        const locationText = typeof event.location === 'string' ? event.location : '';
+        const sanitizedLocation = escapeHtml(locationText).replace(/\n/g, '<br>');
 
         let footerContent = '';
         let footerClasses = 'event-footer';
@@ -603,8 +626,8 @@ function displayEvents() {
             <div class="event-card" data-event-id="${sanitizedEventId}">
                 <h3>${sanitizedTitle}</h3>
                 <p class="event-date">${sanitizedFormattedDate}</p>
-                <p class="event-description">${sanitizedDescription}</p>
-                ${event.location ? `<p class="event-location">📍 ${sanitizedLocation}</p>` : ''}
+                ${descriptionText ? `<p class="event-description">${sanitizedDescription}</p>` : ''}
+                ${locationText ? `<p class="event-location">📍 ${sanitizedLocation}</p>` : ''}
                 <div class="${footerClasses}">
                     ${footerContent}
                 </div>
@@ -641,7 +664,8 @@ function openRsvpModal(eventId) {
             hour: '2-digit',
             minute: '2-digit'
         });
-        document.getElementById('modal-event-description').textContent = event.description;
+        const modalDescription = typeof event.description === 'string' ? event.description : '';
+        document.getElementById('modal-event-description').innerHTML = escapeHtml(modalDescription).replace(/\n/g, '<br>');
     }, 10); // A small delay is enough
 }
 

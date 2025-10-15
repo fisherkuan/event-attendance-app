@@ -465,12 +465,14 @@ section h2 {
     color: #4a5568;
     margin-bottom: 12px;
     line-height: 1.5;
+    white-space: pre-line;
 }
 
 .event-location {
     color: #718096;
     font-size: 0.9rem;
     margin-bottom: 16px;
+    white-space: pre-line;
 }
 
 .rsvp-btn {
