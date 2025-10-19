@@ -985,7 +985,8 @@ section h2 {
     /* Events section full screen */
     .events-section {
         background: white;
-        overflow: hidden;
+        overflow-x: hidden;
+        overflow-y: visible;
     }
 
     .events-section h2 {
