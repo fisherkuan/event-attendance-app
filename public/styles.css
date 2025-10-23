@@ -446,14 +446,13 @@ section h2 {
 .attendance-info:focus-visible::after {
     content: attr(title);
     position: absolute;
-    display: block;
     left: 0;
     bottom: 125%;
     background-color: #333;
     color: #fff;
     padding: 10px;
     border-radius: 5px;
-    z-index: 20;
+    z-index: 60;
     width: -moz-max-content;
     width: max-content;
     font-size: 0.9em;
@@ -1100,10 +1099,8 @@ section h2 {
         top: calc(100% + 12px);
         left: 0;
         right: auto;
-        max-height: min(240px, 60vh);
-        overflow-y: auto;
     }
-    
+
     .modal-content {
         margin: 20px;
         max-height: calc(100vh - 40px);
