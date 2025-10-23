@@ -373,6 +373,11 @@ section h2 {
     position: relative;
 }
 
+.event-card:hover,
+.event-card:focus-within {
+    z-index: 5;
+}
+
 .event-card:hover {
     transform: translateY(-2px);
     box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
@@ -436,16 +441,19 @@ section h2 {
     font-size: 0.9em;
 }
 
-.attendance-info:hover::after {
+.attendance-info:hover::after,
+.attendance-info:focus::after,
+.attendance-info:focus-visible::after {
     content: attr(title);
     position: absolute;
+    display: block;
     left: 0;
     bottom: 125%;
     background-color: #333;
     color: #fff;
     padding: 10px;
     border-radius: 5px;
-    z-index: 1;
+    z-index: 20;
     width: -moz-max-content;
     width: max-content;
     font-size: 0.9em;
@@ -1083,6 +1091,17 @@ section h2 {
     #events-list {
         grid-template-columns: 1fr;
         gap: 16px;
+    }
+
+    .attendance-info:hover::after,
+    .attendance-info:focus::after,
+    .attendance-info:focus-visible::after {
+        bottom: auto;
+        top: calc(100% + 12px);
+        left: 0;
+        right: auto;
+        max-height: min(240px, 60vh);
+        overflow-y: auto;
     }
     
     .modal-content {
