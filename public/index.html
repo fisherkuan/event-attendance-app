@@ -24,33 +24,37 @@
 </head>
 <body class="theme-classic">
 <div class="container">
-<header class="app-header">
-    <div class="header-controls">
-        <button id="theme-toggle" class="theme-toggle-btn" type="button" aria-label="Switch to funky theme" aria-pressed="false" title="Toggle theme">
-            <span aria-hidden="true">👾</span>
-        </button>
+    <div class="hero">
+        <header class="app-header">
+            <div class="header-controls">
+                <button id="theme-toggle" class="theme-toggle-btn" type="button" aria-label="Switch to funky theme" aria-pressed="false" title="Toggle theme">
+                    <span aria-hidden="true">👾</span>
+                </button>
+            </div>
+            <h1 class="app-title">Leuven Taiwanese Events</h1>
+            <p class="header-subtitle" hidden></p>
+        </header>
     </div>
-    <h1 class="app-title">Leuven Taiwanese Events</h1>
-    <p class="header-subtitle" hidden></p>
-</header>
 
     <div class="scroll-snap-container">
     <main>
         <!-- Google Calendar Integration Section -->
         <section class="calendar-section">
             <h2><span class="section-emoji" aria-hidden="true">🗓️</span> Calendar</h2>
-            <div class="calendar-actions">
-                <div class="dropdown">
-                    <button class="calendar-action-btn" title="Add to Google Calendar">
-                        <img src="icons/add.png" alt="Add to Google Calendar">
-                    </button>
-                    <div class="dropdown-content" id="add-to-calendar-dropdown">
-                        <!-- Links will be populated dynamically -->
+            <div class="action-toolbar" data-layout="flex-row">
+                <div class="calendar-actions" data-layout="flex">
+                    <div class="dropdown">
+                        <button class="calendar-action-btn" title="Add to Google Calendar">
+                            <img src="icons/add.png" alt="Add to Google Calendar">
+                        </button>
+                        <div class="dropdown-content" id="add-to-calendar-dropdown">
+                            <!-- Links will be populated dynamically -->
+                        </div>
                     </div>
+                    <a href="#" id="join-group-link" class="calendar-action-btn" title="Join group to add events">
+                        <img src="icons/join.png" alt="Join group to add events">
+                    </a>
                 </div>
-                <a href="#" id="join-group-link" class="calendar-action-btn" title="Join group to add events">
-                    <img src="icons/join.png" alt="Join group to add events">
-                </a>
             </div>
             <div id="calendar-container" aria-live="polite">
                 <!-- Google Calendar iframe will be inserted here -->
@@ -61,51 +65,53 @@
         <!-- Events List Section -->
         <section class="events-section">
             <h2><span class="section-emoji" aria-hidden="true">🎉</span> Events <span id="refresh-events-btn" class="refresh-btn" title="Refresh events"></span></h2>
-            <div class="event-filters">
-                <div class="time-range-selector">
-                    <label for="time-range">Show events:</label>
-                    <select id="time-range" onchange="loadEvents()">
-                        <option value="future">Future Events</option>
-                        <option value="past">Past Events</option>
-                        <option value="all">All Events</option>
-                    </select>
+            <div class="events-grid" data-layout="panel-grid">
+                <div class="event-filters" data-layout="filters">
+                    <div class="time-range-selector" data-layout="flex">
+                        <label for="time-range">Show events:</label>
+                        <select id="time-range" onchange="loadEvents()">
+                            <option value="future">Future Events</option>
+                            <option value="past">Past Events</option>
+                            <option value="all">All Events</option>
+                        </select>
+                    </div>
+                    <div class="calendar-filter-container" data-layout="flex">
+                        <!-- Content will be populated dynamically by JavaScript -->
+                    </div>
                 </div>
-                <div class="calendar-filter-container">
-                    <!-- Content will be populated dynamically by JavaScript -->
+                <div id="events-list" data-layout="event-stream">
+                    <!-- Events will be populated dynamically -->
+                    <div class="loading">Loading events...</div>
                 </div>
-            </div>
-            <div id="events-list">
-                <!-- Events will be populated dynamically -->
-                <div class="loading">Loading events...</div>
             </div>
         </section>
 
         <!-- RSVP Modal -->
-        <div id="rsvp-modal" class="modal hidden">
-            <div class="modal-content">
+        <div id="rsvp-modal" class="modal hidden modal-shell">
+            <div class="modal-content modal-surface">
                 <div class="modal-header">
                     <h3>RSVP for Event</h3>
                     <button class="close-btn" onclick="closeRsvpModal()">&times;</button>
                 </div>
-                <div class="modal-body">
-                    <div id="event-details">
+                <div class="modal-body modal-body-content">
+                    <div id="event-details" class="modal-event-details">
                         <h4 id="modal-event-title">Event Title</h4>
                         <p id="modal-event-date">Event Date</p>
                         <p id="modal-event-description">Event Description</p>
                     </div>
-                    
-                    <div class="rsvp-actions">
+
+                    <div class="rsvp-actions" data-layout="stack">
                         <div class="form-group">
                             <label for="attendee-name">Your Name</label>
                             <input type="text" id="attendee-name" placeholder="Enter your name">
                         </div>
-                        
-                        <div class="rsvp-buttons">
+
+                        <div class="rsvp-buttons" data-layout="inline">
                             <button class="rsvp-add-btn" onclick="submitRsvp('add')">
                                 <span class="text">Confirm</span>
                             </button>
                         </div>
-                        
+
                         <div class="form-actions">
                             <button type="button" onclick="closeRsvpModal()">Cancel</button>
                         </div>
@@ -115,59 +121,62 @@
         </div>
 
         <!-- Remove RSVP Modal -->
-        <div id="remove-rsvp-modal" class="modal hidden">
-            <div class="modal-content">
+        <div id="remove-rsvp-modal" class="modal hidden modal-shell">
+            <div class="modal-content modal-surface">
                 <div class="modal-header">
                     <h3>Remove RSVP</h3>
                     <button class="close-btn" onclick="closeRemoveRsvpModal()">&times;</button>
                 </div>
-                <div class="modal-body">
-                    <div id="event-details">
+                <div class="modal-body modal-body-content">
+                    <div id="event-details" class="modal-event-details">
                         <h4 id="remove-modal-event-title">Event Title</h4>
                         <p id="remove-modal-event-date">Event Date</p>
                     </div>
-                    
-                    <div class="rsvp-actions">
+
+                    <div class="rsvp-actions" data-layout="stack">
                         <div class="form-group">
                             <label for="attendee-to-remove">Select Attendee to Remove</label>
                             <select id="attendee-to-remove"></select>
                         </div>
-                        
-                        <div class="rsvp-buttons">
+
+                        <div class="rsvp-buttons" data-layout="inline">
                             <button class="rsvp-remove-btn" onclick="submitRemoveRsvp()">
                                 <span class="text">Confirm</span>
                             </button>
                         </div>
-                        
+
                         <div class="form-actions">
                             <button type="button" onclick="closeRemoveRsvpModal()">Cancel</button>
                         </div>
                     </div>
                 </div>
             </div>
+        </div>
 
         
     </main>
 
-    <div class="bottom-banner">
-        <div class="banner-content">
-            <div class="support-buttons">
-                <button id="donate-btn" class="support-btn">
-                    <img src="icons/one-time-donation.png" alt="Donate" class="btn-icon">
-                    Donate
-                </button>
-                <button id="report-issue-btn" class="support-btn">
-                    <img src="icons/bug.png" alt="Report Issue" class="btn-icon">
-                    Report Issue
-                </button>
+    <section class="support-cta">
+        <div class="bottom-banner">
+            <div class="banner-content">
+                <div class="support-buttons" data-layout="action-cluster">
+                    <button id="donate-btn" class="support-btn">
+                        <img src="icons/one-time-donation.png" alt="Donate" class="btn-icon">
+                        Donate
+                    </button>
+                    <button id="report-issue-btn" class="support-btn">
+                        <img src="icons/bug.png" alt="Report Issue" class="btn-icon">
+                        Report Issue
+                    </button>
+                </div>
+                <div class="support-header" data-layout="stack">
+                    <p class="support-line" data-index="0">Hosting this web app costs money—your support keeps it running.</p>
+                    <p class="support-line" data-index="1">All donations go directly to operating expenses.</p>
+                </div>
+                <p class="copyright">&copy; Built by Fisher Kuan</p>
             </div>
-            <div class="support-header">
-                <p class="support-line" data-index="0">Hosting this web app costs money—your support keeps it running.</p>
-                <p class="support-line" data-index="1">All donations go directly to operating expenses.</p>
-            </div>
-            <p class="copyright">&copy; Built by Fisher Kuan</p>
         </div>
-    </div>
+    </section>
 
     </div><!-- end scroll-snap-container -->
 
