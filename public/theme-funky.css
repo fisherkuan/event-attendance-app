@@ -1,24 +1,68 @@
 /* Funky dev vibe theme overrides */
 /* Extracted from styles.css to keep base styles lean */
 body.theme-funky {
-    --bg-color: #050517;
-    --panel-bg: rgba(9, 13, 40, 0.92);
-    --panel-border: rgba(56, 189, 248, 0.55);
-    --panel-shadow: 0 0 40px rgba(56, 189, 248, 0.14);
-    --primary-text: #f8fafc;
-    --secondary-text: #94a3b8;
-    --accent: #14f195;
-    --accent-strong: #38bdf8;
+    /* Typography */
+    --font-family-base: 'Space Grotesk', 'Noto Sans', sans-serif;
+    --font-family-display: 'Press Start 2P', 'Space Grotesk', 'Raleway', sans-serif;
+
+    /* Brand palette */
+    --color-brand-primary: #38bdf8;
+    --color-brand-primary-dark: #0ea5e9;
+    --color-brand-secondary: #c084fc;
+    --color-brand-secondary-dark: #9333ea;
+    --color-brand-tertiary: #14f195;
+    --color-brand-highlight: #22d3ee;
+    --color-accent-positive: #14f195;
+    --color-accent-positive-dark: #0ca678;
+    --color-accent-negative: #f87171;
+    --color-accent-negative-dark: #dc2626;
+
+    /* Surfaces */
+    --color-surface: #050517;
+    --color-surface-elevated: rgba(8, 11, 34, 0.95);
+    --color-surface-card: rgba(8, 11, 34, 0.9);
+    --color-surface-overlay: rgba(8, 11, 34, 0.75);
+    --color-border: rgba(56, 189, 248, 0.25);
+    --color-border-strong: rgba(56, 189, 248, 0.45);
+
+    /* Text */
+    --color-text-primary: #f8fafc;
+    --color-text-secondary: #94a3b8;
+    --color-text-muted: rgba(148, 163, 184, 0.7);
+    --color-text-inverse: #f8fafc;
+
+    /* Effects */
+    --gradient-hero: linear-gradient(135deg, rgba(56, 189, 248, 0.45) 0%, rgba(124, 58, 237, 0.45) 100%);
+    --gradient-hero-dark: linear-gradient(135deg, rgba(56, 189, 248, 0.65) 0%, rgba(124, 58, 237, 0.65) 100%);
+    --gradient-accent: linear-gradient(135deg, rgba(20, 241, 149, 0.92) 0%, rgba(56, 189, 248, 0.92) 100%);
+    --focus-ring: 0 0 0 3px rgba(56, 189, 248, 0.45);
+    --focus-border: rgba(56, 189, 248, 0.55);
+    --elevation-xs: 0 6px 16px rgba(8, 12, 34, 0.35);
+    --elevation-sm: 0 16px 32px rgba(8, 12, 34, 0.45);
+    --elevation-md: 0 24px 48px rgba(8, 12, 34, 0.55);
+    --elevation-lg: 0 32px 64px rgba(5, 8, 24, 0.65);
+    --blur-glass: 22px;
+
+    /* Legacy aliases for theme-specific rules */
+    --bg-color: var(--color-surface);
+    --panel-bg: var(--color-surface-card);
+    --panel-border: var(--color-border-strong);
+    --panel-shadow: var(--elevation-md);
+    --primary-text: var(--color-text-primary);
+    --secondary-text: var(--color-text-secondary);
+    --accent: var(--color-brand-tertiary);
+    --accent-strong: var(--color-brand-primary);
     --accent-soft: rgba(56, 189, 248, 0.18);
     --warning: #facc15;
-    background-color: var(--bg-color);
+
+    background-color: var(--color-surface);
     background-image:
         radial-gradient(rgba(56, 189, 248, 0.12) 1px, transparent 1px),
         radial-gradient(rgba(250, 204, 21, 0.08) 1px, transparent 1px);
     background-size: 70px 70px, 70px 70px;
     background-position: 0 0, 35px 35px;
-    color: var(--primary-text);
-    font-family: 'Space Grotesk', 'Noto Sans', sans-serif;
+    color: var(--color-text-primary);
+    font-family: var(--font-family-base);
 }
 
 body.theme-funky a {
@@ -76,11 +120,11 @@ body.theme-funky .header-controls {
 
 body.theme-funky .theme-toggle-btn {
     border-color: rgba(148, 163, 184, 0.65);
-    background: #f8fafc;
-    color: #475569;
+    background: var(--color-text-inverse);
+    color: var(--color-brand-primary-dark);
     width: 52px;
     height: 52px;
-    box-shadow: 0 12px 22px rgba(15, 23, 42, 0.25);
+    box-shadow: var(--elevation-sm);
     text-shadow: none;
 }
 
