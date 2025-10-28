@@ -101,28 +101,46 @@ const THEME_STORAGE_KEY = 'event-attendance-theme';
 
 const THEME_CONTENT = {
     funky: {
-        title: "<span class='emoji' aria-hidden='true'>💾</span> Leuven Taiwanese Events <span class='emoji' aria-hidden='true'>🚀</span>",
-        mobileTitle: "<span class='emoji' aria-hidden='true'>💾</span> Leuven TW Events <span class='emoji' aria-hidden='true'>🚀</span>",
-        subtitle: 'Plug into the community pulse, one meetup at a time.',
-        instructions: '🕹️',
+        accessibleName: 'Midnight',
+        title: "<span class='emoji' aria-hidden='true'>🌌</span> Leuven Taiwanese Nights <span class='emoji' aria-hidden='true'>🎇</span>",
+        mobileTitle: "<span class='emoji' aria-hidden='true'>🌌</span> Leuven TW Nights <span class='emoji' aria-hidden='true'>🎇</span>",
+        subtitle: 'Share lantern-lit gatherings and after-dark workshops with neighbors.',
+        instructions: '🧭',
+        instructionsLabel: 'Open the midnight walkthrough',
         support: [
-            '⚙️ Hosting this app takes real-world resources—chip in if you can.',
-            '💾 Every donation fuels uptime and new experiments.'
+            '🌙 Membership gifts keep night mode servers humming.',
+            '🎇 Your support unlocks more twilight meetups and digital perks.'
         ],
-        toggleIcon: '🥸'
+        themeName: 'midnight',
+        toggleIcon: '🌞'
     },
     classic: {
-        title: 'Leuven Taiwanese Events',
-        mobileTitle: 'Leuven TW Events',
-        subtitle: '',
-        instructions: '?',
+        accessibleName: 'Daybreak',
+        title: "<span class='emoji' aria-hidden='true'>🌤️</span> Leuven Taiwanese Days <span class='emoji' aria-hidden='true'>🌼</span>",
+        mobileTitle: "<span class='emoji' aria-hidden='true'>🌤️</span> Leuven TW Days <span class='emoji' aria-hidden='true'>🌼</span>",
+        subtitle: 'Plan daytime mixers and family-friendly pop-ups at a glance.',
+        instructions: '🧭',
+        instructionsLabel: 'Open the daybreak walkthrough',
         support: [
-            'Hosting this web app costs money—your support keeps it running.',
-            'All donations go directly to operating expenses.'
+            '🌞 Back our daylight mode to keep the community hub bright.',
+            '🌼 Contributions fund fresh programming and accessibility upgrades.'
         ],
-        toggleIcon: '👾'
+        themeName: 'daybreak',
+        toggleIcon: '🌜'
     }
 };
+
+function getTextFromMarkup(markup) {
+    if (!markup) {
+        return '';
+    }
+
+    if (typeof markup !== 'string') {
+        return String(markup);
+    }
+
+    return markup.replace(/<[^>]*>/g, '').trim();
+}
 
 function getStoredTheme() {
     try {
@@ -145,13 +163,20 @@ function applyTheme(theme) {
     const isFunky = theme !== 'classic';
     document.body.classList.toggle('theme-funky', isFunky);
     document.body.classList.toggle('theme-classic', !isFunky);
+    document.body.classList.toggle('theme-dark', isFunky);
+    document.body.classList.toggle('theme-light', !isFunky);
 
     const content = isFunky ? THEME_CONTENT.funky : THEME_CONTENT.classic;
 
-    updateHeaderContent(content);
+    document.body.setAttribute('data-theme', isFunky ? 'dark' : 'light');
+    document.body.setAttribute('data-theme-name', content.themeName || (isFunky ? 'funky' : 'classic'));
+    updateViewportState(content);
 
     if (instructionsBtn && content.instructions) {
         instructionsBtn.textContent = content.instructions;
+        if (content.instructionsLabel) {
+            instructionsBtn.setAttribute('aria-label', content.instructionsLabel);
+        }
     }
 
     if (themeToggle && content.toggleIcon) {
@@ -167,15 +192,28 @@ function applyTheme(theme) {
     }
 
     if (themeToggle) {
+        const nextThemeContent = isFunky ? THEME_CONTENT.classic : THEME_CONTENT.funky;
+        const nextThemeName = nextThemeContent.accessibleName || (isFunky ? 'Classic' : 'Funky');
+        const nextLabel = `Switch to ${nextThemeName.toLowerCase()} theme`;
         themeToggle.setAttribute('aria-pressed', isFunky ? 'true' : 'false');
-        const nextLabel = isFunky ? 'Switch to classic theme' : 'Switch to funky theme';
         themeToggle.setAttribute('aria-label', nextLabel);
         themeToggle.setAttribute('title', nextLabel);
+        themeToggle.setAttribute('data-theme-target', nextThemeName.toLowerCase());
     }
 }
 
 function isMobileViewport() {
     return MOBILE_VIEW_QUERY.matches;
+}
+
+function isCompactViewport() {
+    return TABLET_VIEW_QUERY.matches;
+}
+
+function updateViewportState(content) {
+    document.body.classList.toggle('viewport-mobile', isMobileViewport());
+    document.body.classList.toggle('viewport-compact', isCompactViewport());
+    updateHeaderContent(content);
 }
 
 function updateHeaderContent(content) {
@@ -184,14 +222,23 @@ function updateHeaderContent(content) {
     }
 
     if (appTitle) {
-        const titleMarkup = isMobileViewport() && content.mobileTitle ? content.mobileTitle : content.title;
+        const useMobileTitle = isMobileViewport() && content.mobileTitle;
+        const titleMarkup = useMobileTitle ? content.mobileTitle : content.title;
         appTitle.innerHTML = titleMarkup || '';
+        appTitle.setAttribute('aria-live', 'polite');
+        appTitle.setAttribute('data-heading-variant', useMobileTitle ? 'mobile' : 'desktop');
+        const readableTitle = getTextFromMarkup(titleMarkup);
+        if (readableTitle) {
+            appTitle.setAttribute('aria-label', readableTitle);
+        }
     }
 
     if (headerSubtitle) {
-        const shouldShowSubtitle = Boolean(content.subtitle) && !isMobileViewport();
+        const shouldShowSubtitle = Boolean(content.subtitle) && !isCompactViewport();
         headerSubtitle.textContent = shouldShowSubtitle ? content.subtitle : '';
         headerSubtitle.hidden = !shouldShowSubtitle;
+        headerSubtitle.setAttribute('aria-hidden', shouldShowSubtitle ? 'false' : 'true');
+        headerSubtitle.setAttribute('aria-live', 'polite');
     }
 }
 
@@ -201,13 +248,19 @@ function getCurrentThemeKey() {
 
 function handleViewportChange() {
     const currentContent = THEME_CONTENT[getCurrentThemeKey()];
-    updateHeaderContent(currentContent);
+    updateViewportState(currentContent);
 }
 
 if (typeof MOBILE_VIEW_QUERY.addEventListener === 'function') {
     MOBILE_VIEW_QUERY.addEventListener('change', handleViewportChange);
 } else if (typeof MOBILE_VIEW_QUERY.addListener === 'function') {
     MOBILE_VIEW_QUERY.addListener(handleViewportChange);
+}
+
+if (typeof TABLET_VIEW_QUERY.addEventListener === 'function') {
+    TABLET_VIEW_QUERY.addEventListener('change', handleViewportChange);
+} else if (typeof TABLET_VIEW_QUERY.addListener === 'function') {
+    TABLET_VIEW_QUERY.addListener(handleViewportChange);
 }
 
 function setupThemeToggle() {
