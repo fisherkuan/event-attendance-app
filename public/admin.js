@@ -2,67 +2,7 @@ const API_BASE_URL = window.location.origin;
 
 let allAdminEvents = []; // Global variable to store event data
 
-const themeToggle = document.getElementById('theme-toggle');
-const THEME_STORAGE_KEY = 'event-attendance-theme';
-const THEME_TOGGLE_ICONS = {
-    funky: '🥸',
-    classic: '👾'
-};
-
-function getStoredTheme() {
-    try {
-        return localStorage.getItem(THEME_STORAGE_KEY);
-    } catch (error) {
-        console.warn('Unable to read theme preference:', error);
-        return null;
-    }
-}
-
-function storeTheme(theme) {
-    try {
-        localStorage.setItem(THEME_STORAGE_KEY, theme);
-    } catch (error) {
-        console.warn('Unable to persist theme preference:', error);
-    }
-}
-
-function applyTheme(theme) {
-    const isFunky = theme !== 'classic';
-    document.body.classList.toggle('theme-funky', isFunky);
-    document.body.classList.toggle('theme-classic', !isFunky);
-
-    if (themeToggle) {
-        const icon = isFunky ? THEME_TOGGLE_ICONS.funky : THEME_TOGGLE_ICONS.classic;
-        themeToggle.innerHTML = `<span aria-hidden="true">${icon}</span>`;
-        themeToggle.setAttribute('aria-pressed', isFunky ? 'true' : 'false');
-        const nextLabel = isFunky ? 'Switch to classic theme' : 'Switch to funky theme';
-        themeToggle.setAttribute('aria-label', nextLabel);
-        themeToggle.setAttribute('title', nextLabel);
-    }
-}
-
-function setupThemeToggle() {
-    const savedTheme = getStoredTheme();
-    const initialTheme = savedTheme === 'funky' ? 'funky' : 'classic';
-    applyTheme(initialTheme);
-    if (!savedTheme) {
-        storeTheme(initialTheme);
-    }
-
-    if (!themeToggle) {
-        return;
-    }
-
-    themeToggle.addEventListener('click', () => {
-        const currentTheme = document.body.classList.contains('theme-funky') ? 'funky' : 'classic';
-        const nextTheme = currentTheme === 'funky' ? 'classic' : 'funky';
-        applyTheme(nextTheme);
-        storeTheme(nextTheme);
-    });
-}
-
 document.addEventListener('DOMContentLoaded', () => {
-    setupThemeToggle();
     loadEvents();
     setupWebSocket();
 });

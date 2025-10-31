@@ -1,9 +1,8 @@
-const CACHE_NAME = 'event-attendance-app-cache-v4'; // Bumped version
+const CACHE_NAME = 'event-attendance-app-cache-v5'; // Bumped version
 const urlsToCache = [
   '/',
   '/index.html',
   '/styles.css',
-  '/theme-funky.css',
   '/app.js',
   '/manifest.json',
   '/icons/icon-192x192.png',

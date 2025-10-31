@@ -89,145 +89,45 @@ const eventsList = document.getElementById('events-list');
 const rsvpModal = document.getElementById('rsvp-modal');
 const rsvpForm = document.getElementById('rsvp-form');
 const attendanceSummary = document.getElementById('attendance-summary');
-const themeToggle = document.getElementById('theme-toggle');
 const appTitle = document.querySelector('.app-title');
 const headerSubtitle = document.querySelector('.header-subtitle');
-const instructionsBtn = document.getElementById('instructions-btn');
-const supportLines = document.querySelectorAll('.support-line');
 const MOBILE_VIEW_QUERY = window.matchMedia('(max-width: 480px)');
 const TABLET_VIEW_QUERY = window.matchMedia('(max-width: 768px)');
 
-const THEME_STORAGE_KEY = 'event-attendance-theme';
-
-const THEME_CONTENT = {
-    funky: {
-        title: "<span class='emoji' aria-hidden='true'>💾</span> Leuven Taiwanese Events <span class='emoji' aria-hidden='true'>🚀</span>",
-        mobileTitle: "<span class='emoji' aria-hidden='true'>💾</span> Leuven TW Events <span class='emoji' aria-hidden='true'>🚀</span>",
-        subtitle: 'Plug into the community pulse, one meetup at a time.',
-        instructions: '🕹️',
-        support: [
-            '⚙️ Hosting this app takes real-world resources—chip in if you can.',
-            '💾 Every donation fuels uptime and new experiments.'
-        ],
-        toggleIcon: '🥸'
-    },
-    classic: {
-        title: 'Leuven Taiwanese Events',
-        mobileTitle: 'Leuven TW Events',
-        subtitle: '',
-        instructions: '?',
-        support: [
-            'Hosting this web app costs money—your support keeps it running.',
-            'All donations go directly to operating expenses.'
-        ],
-        toggleIcon: '👾'
-    }
+const HEADER_CONTENT = {
+    title: 'Leuven Taiwanese Events',
+    mobileTitle: 'Leuven TW Events',
+    subtitle: ''
 };
-
-function getStoredTheme() {
-    try {
-        return localStorage.getItem(THEME_STORAGE_KEY);
-    } catch (error) {
-        console.warn('Unable to read theme preference:', error);
-        return null;
-    }
-}
-
-function storeTheme(theme) {
-    try {
-        localStorage.setItem(THEME_STORAGE_KEY, theme);
-    } catch (error) {
-        console.warn('Unable to persist theme preference:', error);
-    }
-}
-
-function applyTheme(theme) {
-    const isFunky = theme !== 'classic';
-    document.body.classList.toggle('theme-funky', isFunky);
-    document.body.classList.toggle('theme-classic', !isFunky);
-
-    const content = isFunky ? THEME_CONTENT.funky : THEME_CONTENT.classic;
-
-    updateHeaderContent(content);
-
-    if (instructionsBtn && content.instructions) {
-        instructionsBtn.textContent = content.instructions;
-    }
-
-    if (themeToggle && content.toggleIcon) {
-        themeToggle.innerHTML = `<span aria-hidden="true">${content.toggleIcon}</span>`;
-    }
-
-    if (supportLines && supportLines.length) {
-        supportLines.forEach((line, index) => {
-            const lineText = content.support[index] || '';
-            line.textContent = lineText;
-            line.hidden = lineText === '';
-        });
-    }
-
-    if (themeToggle) {
-        themeToggle.setAttribute('aria-pressed', isFunky ? 'true' : 'false');
-        const nextLabel = isFunky ? 'Switch to classic theme' : 'Switch to funky theme';
-        themeToggle.setAttribute('aria-label', nextLabel);
-        themeToggle.setAttribute('title', nextLabel);
-    }
-}
 
 function isMobileViewport() {
     return MOBILE_VIEW_QUERY.matches;
 }
 
-function updateHeaderContent(content) {
-    if (!content) {
+function applyHeaderContent() {
+    if (!appTitle) {
         return;
     }
 
-    if (appTitle) {
-        const titleMarkup = isMobileViewport() && content.mobileTitle ? content.mobileTitle : content.title;
-        appTitle.innerHTML = titleMarkup || '';
-    }
+    const useMobileTitle = isMobileViewport() && HEADER_CONTENT.mobileTitle;
+    const titleText = useMobileTitle ? HEADER_CONTENT.mobileTitle : HEADER_CONTENT.title;
+    appTitle.textContent = titleText || '';
 
     if (headerSubtitle) {
-        const shouldShowSubtitle = Boolean(content.subtitle) && !isMobileViewport();
-        headerSubtitle.textContent = shouldShowSubtitle ? content.subtitle : '';
+        const shouldShowSubtitle = Boolean(HEADER_CONTENT.subtitle) && !isMobileViewport();
+        headerSubtitle.textContent = shouldShowSubtitle ? HEADER_CONTENT.subtitle : '';
         headerSubtitle.hidden = !shouldShowSubtitle;
     }
 }
 
-function getCurrentThemeKey() {
-    return document.body.classList.contains('theme-funky') ? 'funky' : 'classic';
-}
-
 function handleViewportChange() {
-    const currentContent = THEME_CONTENT[getCurrentThemeKey()];
-    updateHeaderContent(currentContent);
+    applyHeaderContent();
 }
 
 if (typeof MOBILE_VIEW_QUERY.addEventListener === 'function') {
     MOBILE_VIEW_QUERY.addEventListener('change', handleViewportChange);
 } else if (typeof MOBILE_VIEW_QUERY.addListener === 'function') {
     MOBILE_VIEW_QUERY.addListener(handleViewportChange);
-}
-
-function setupThemeToggle() {
-    const savedTheme = getStoredTheme();
-    const initialTheme = savedTheme === 'funky' ? 'funky' : 'classic';
-    applyTheme(initialTheme);
-    if (!savedTheme) {
-        storeTheme(initialTheme);
-    }
-
-    if (!themeToggle) {
-        return;
-    }
-
-    themeToggle.addEventListener('click', () => {
-        const currentTheme = document.body.classList.contains('theme-funky') ? 'funky' : 'classic';
-        const nextTheme = currentTheme === 'funky' ? 'classic' : 'funky';
-        applyTheme(nextTheme);
-        storeTheme(nextTheme);
-    });
 }
 
 // Initialize the app when DOM is loaded
@@ -246,7 +146,7 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 function initializeApp() {
-    setupThemeToggle();
+    applyHeaderContent();
     
     // Load configuration first
     loadConfig().then(() => {
