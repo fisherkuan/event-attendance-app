@@ -48,6 +48,10 @@ h1, h2, h3, h4, h5, h6 {
     padding: 30px 20px;
 }
 
+.mobile-info-links {
+    display: none;
+}
+
 .instructions-header {
     font-size: 2rem;
 }
@@ -1017,6 +1021,36 @@ section h2 {
         justify-content: center;
         align-items: center;
         height: 100%;
+    }
+
+    .app-header-links {
+        display: none;
+    }
+
+    .mobile-info-links {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 12px;
+        margin: 0 0 28px;
+        font-size: 1.05rem;
+        font-weight: 400;
+        color: rgba(255, 255, 255, 0.9);
+        text-align: center;
+    }
+
+    .mobile-info-links a {
+        color: inherit;
+        text-decoration: underline;
+    }
+
+    .mobile-info-links a:hover,
+    .mobile-info-links a:focus {
+        color: #e0e7ff;
+    }
+
+    .mobile-info-links-separator {
+        opacity: 0.65;
     }
 
     /* Page indicators styling */
