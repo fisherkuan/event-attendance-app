@@ -182,6 +182,27 @@ async function initializeDatabase() {
                 timestamp TIMESTAMPTZ NOT NULL
             );
         `);
+
+        await client.query(`
+            CREATE TABLE IF NOT EXISTS donations (
+                id VARCHAR(255) PRIMARY KEY,
+                amount DECIMAL(10, 2) NOT NULL,
+                description TEXT,
+                donator VARCHAR(255),
+                created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+                created_by VARCHAR(255)
+            );
+        `);
+        
+        // Add donator column if it doesn't exist (for existing tables)
+        try {
+            await client.query('ALTER TABLE donations ADD COLUMN donator VARCHAR(255)');
+        } catch (error) {
+            // Column already exists, ignore the error
+            if (!error.message.includes('already exists') && !error.message.includes('duplicate')) {
+                console.error('Error adding donator column:', error);
+            }
+        }
         console.log('Database schema initialized.');
     } catch (error) {
         console.error('Error initializing database schema:', error);
@@ -677,6 +698,85 @@ app.delete('/api/events/:id', async (req, res) => {
     }
 });
 
+// Donations API Routes
+
+// Get all donations with balance calculation
+app.get('/api/donations', async (req, res) => {
+    const client = await pool.connect();
+    try {
+        const limit = parseInt(req.query.limit) || 20;
+        
+        // Get latest donations
+        const donationsResult = await client.query(`
+            SELECT id, amount, description, donator, created_at, created_by
+            FROM donations
+            ORDER BY created_at DESC
+            LIMIT $1
+        `, [limit]);
+
+        // Calculate total balance
+        const balanceResult = await client.query(`
+            SELECT COALESCE(SUM(amount), 0) as balance
+            FROM donations
+        `);
+
+        const balance = parseFloat(balanceResult.rows[0].balance) || 0;
+
+        res.json({
+            balance: balance,
+            donations: donationsResult.rows.map(row => ({
+                id: row.id,
+                amount: parseFloat(row.amount),
+                description: row.description || '',
+                donator: row.donator || '',
+                created_at: row.created_at,
+                created_by: row.created_by || ''
+            }))
+        });
+    } catch (error) {
+        console.error('Error fetching donations:', error);
+        res.status(500).json({ error: 'Failed to fetch donations' });
+    } finally {
+        client.release();
+    }
+});
+
+// Create a new donation (admin only - can add auth later)
+app.post('/api/donations', async (req, res) => {
+    const client = await pool.connect();
+    try {
+        const { amount, description, donator, created_by } = req.body;
+
+        if (!amount || amount === 0) {
+            return res.status(400).json({ success: false, message: 'Amount is required and must not be zero' });
+        }
+
+        const donationId = uuidv4();
+        
+        await client.query(
+            'INSERT INTO donations (id, amount, description, donator, created_by) VALUES ($1, $2, $3, $4, $5)',
+            [donationId, amount, description || null, donator || null, created_by || null]
+        );
+
+        res.json({ 
+            success: true, 
+            message: 'Donation added successfully',
+            donation: {
+                id: donationId,
+                amount: parseFloat(amount),
+                description: description || '',
+                donator: donator || '',
+                created_by: created_by || ''
+            }
+        });
+    } catch (error) {
+        console.error('Error creating donation:', error);
+        res.status(500).json({ success: false, message: 'Internal server error' });
+    } finally {
+        client.release();
+    }
+});
+
 // Health check endpoint
 app.get('/api/health', (req, res) => {
     res.json({ status: 'OK', timestamp: new Date().toISOString() });
@@ -684,6 +784,14 @@ app.get('/api/health', (req, res) => {
 
 app.get('/admin', (req, res) => {
     res.sendFile(path.join(__dirname, '../public/admin.html'));
+});
+
+app.get('/admin/donations', (req, res) => {
+    res.sendFile(path.join(__dirname, '../public/admin-donations.html'));
+});
+
+app.get('/donations', (req, res) => {
+    res.sendFile(path.join(__dirname, '../public/donations.html'));
 });
 
 // Serve the main application for all other routes

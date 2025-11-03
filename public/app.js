@@ -167,6 +167,13 @@ function initializeApp() {
 
         // Set up scroll-snap page indicators
         setupScrollSnapIndicators();
+
+        // Load donation balance for button (don't block on this)
+        loadDonationBalance().catch(err => {
+            console.error('Failed to load donation balance:', err);
+        });
+    }).catch(error => {
+        console.error('Error initializing app:', error);
     });
 }
 
@@ -700,6 +707,13 @@ function setupEventListeners() {
     if (donateBtn) {
         donateBtn.addEventListener('click', donate);
     }
+
+    const reportIssueBtn = document.getElementById('report-issue-btn');
+    if (reportIssueBtn) {
+        reportIssueBtn.addEventListener('click', () => {
+            window.open('https://docs.google.com/forms/d/e/1FAIpQLScEcmD-j6pd9U9q323nQT5xMf2G8AW2X4GkUAlGOr89ZlNwGg/viewform?embedded=true', '_blank');
+        });
+    }
 }
 
 async function donate() {
@@ -771,9 +785,34 @@ function submitRsvp(action) {
 
 
 
-    const reportIssueBtn = document.getElementById('report-issue-btn');
-    if (reportIssueBtn) {
-        reportIssueBtn.addEventListener('click', () => {
-            window.open('https://docs.google.com/forms/d/e/1FAIpQLScEcmD-j6pd9U9q323nQT5xMf2G8AW2X4GkUAlGOr89ZlNwGg/viewform?embedded=true', '_blank');
-        });
+
+
+async function loadDonationBalance() {
+    try {
+        const response = await fetch(`${API_BASE_URL}/api/donations?limit=1`);
+        const data = await response.json();
+        updateDonationButton(data.balance);
+    } catch (error) {
+        console.error('Error loading donation balance:', error);
+        // Keep default emoji on error
     }
+}
+
+function updateDonationButton(balance) {
+    const donationBtn = document.getElementById('donation-btn');
+    if (!donationBtn) return;
+    
+    // Update emoji based on balance
+    if (balance > 0) {
+        donationBtn.textContent = '💰';
+        donationBtn.classList.add('positive');
+        donationBtn.classList.remove('negative');
+    } else if (balance < 0) {
+        donationBtn.textContent = '💸';
+        donationBtn.classList.add('negative');
+        donationBtn.classList.remove('positive');
+    } else {
+        donationBtn.textContent = '💰';
+        donationBtn.classList.remove('positive', 'negative');
+    }
+}
