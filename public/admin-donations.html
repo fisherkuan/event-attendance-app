@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin - Donations</title>
+    <link rel="stylesheet" href="/styles.css">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans:wght@300;400;600;700&family=Press+Start+2P&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="icon" href="/icons/favicon.ico" type="image/x-icon">
+</head>
+<body>
+    <div class="container">
+        <header class="app-header">
+            <h1>🦧 Admin - Donations 🦧</h1>
+            <p>Manage donation entries</p>
+        </header>
+
+        <main>
+            <section class="admin-donations-section">
+                <h2><span class="section-emoji" aria-hidden="true">➕</span> Add Entry</h2>
+                
+                <form id="donation-form" class="donation-form">
+                    <div class="form-group">
+                        <label for="amount">Amount (€)</label>
+                        <input 
+                            type="number" 
+                            id="amount" 
+                            name="amount" 
+                            step="0.01" 
+                            required 
+                            placeholder="Enter amount (negative for expenses)"
+                        >
+                        <small class="form-help">Use negative values for expenses (e.g., -50.00)</small>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="donator">Donator (optional)</label>
+                        <input 
+                            type="text" 
+                            id="donator" 
+                            name="donator" 
+                            placeholder="Name of the donor/payer"
+                        >
+                        <small class="form-help">The person or organization who made the donation/payment</small>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="description">Description (optional)</label>
+                        <textarea 
+                            id="description" 
+                            name="description" 
+                            rows="3" 
+                            placeholder="Brief description of the donation/expense"
+                        ></textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="entry_date">Entry Date (optional)</label>
+                        <input 
+                            type="date" 
+                            id="entry_date" 
+                            name="entry_date"
+                        >
+                        <small class="form-help">Date of the donation/expense. If not provided, current date will be used.</small>
+                    </div>
+
+                    <div class="form-actions">
+                        <button type="submit" class="btn-primary">Add Entry</button>
+                        <button type="button" class="btn-secondary" onclick="resetForm()">Reset</button>
+                    </div>
+                </form>
+
+                <div id="form-message" class="form-message"></div>
+            </section>
+        </main>
+
+        <div class="bottom-banner">
+            <div class="container">
+                <div class="support-buttons">
+                    <a href="/" class="support-btn">Back to Home</a>
+                    <a href="/donations" class="support-btn">View Balance & Entries</a>
+                </div>
+                <p class="copyright">&copy; Built by Fisher Kuan</p>
+            </div>
+        </div>
+
+    <script src="/js/admin-donations.js"></script>
+</body>
+</html>
+

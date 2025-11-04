@@ -182,6 +182,45 @@ async function initializeDatabase() {
                 timestamp TIMESTAMPTZ NOT NULL
             );
         `);
+
+        await client.query(`
+            CREATE TABLE IF NOT EXISTS donations (
+                id VARCHAR(255) PRIMARY KEY,
+                amount DECIMAL(10, 2) NOT NULL,
+                description TEXT,
+                donator VARCHAR(255),
+                entry_date TIMESTAMPTZ,
+                created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+            );
+        `);
+        
+        // Add donator column if it doesn't exist (for existing tables)
+        try {
+            await client.query('ALTER TABLE donations ADD COLUMN donator VARCHAR(255)');
+        } catch (error) {
+            // Column already exists, ignore the error
+            if (!error.message.includes('already exists') && !error.message.includes('duplicate')) {
+                console.error('Error adding donator column:', error);
+            }
+        }
+        
+        // Add entry_date column if it doesn't exist (for existing tables)
+        try {
+            await client.query('ALTER TABLE donations ADD COLUMN entry_date TIMESTAMPTZ');
+        } catch (error) {
+            // Column already exists, ignore the error
+            if (!error.message.includes('already exists') && !error.message.includes('duplicate')) {
+                console.error('Error adding entry_date column:', error);
+            }
+        }
+        
+        // Remove created_by column if it exists (for existing tables)
+        try {
+            await client.query('ALTER TABLE donations DROP COLUMN IF EXISTS created_by');
+        } catch (error) {
+            // Ignore errors if column doesn't exist or can't be dropped
+            console.log('Note: created_by column removal attempted (may not exist):', error.message);
+        }
         console.log('Database schema initialized.');
     } catch (error) {
         console.error('Error initializing database schema:', error);
@@ -677,6 +716,91 @@ app.delete('/api/events/:id', async (req, res) => {
     }
 });
 
+// Donations API Routes
+
+// Get all donations with balance calculation
+app.get('/api/donations', async (req, res) => {
+    const client = await pool.connect();
+    try {
+        const limit = parseInt(req.query.limit) || 20;
+        
+        // Get latest donations
+        const donationsResult = await client.query(`
+            SELECT id, amount, description, donator, entry_date, created_at
+            FROM donations
+            ORDER BY COALESCE(entry_date, created_at) DESC
+            LIMIT $1
+        `, [limit]);
+
+        // Calculate total balance
+        const balanceResult = await client.query(`
+            SELECT COALESCE(SUM(amount), 0) as balance
+            FROM donations
+        `);
+
+        const balance = parseFloat(balanceResult.rows[0].balance) || 0;
+
+        res.json({
+            balance: balance,
+            donations: donationsResult.rows.map(row => ({
+                id: row.id,
+                amount: parseFloat(row.amount),
+                description: row.description || '',
+                donator: row.donator || '',
+                entry_date: row.entry_date || null,
+                created_at: row.created_at
+            }))
+        });
+    } catch (error) {
+        console.error('Error fetching donations:', error);
+        res.status(500).json({ error: 'Failed to fetch donations' });
+    } finally {
+        client.release();
+    }
+});
+
+// Create a new donation (admin only - can add auth later)
+app.post('/api/donations', async (req, res) => {
+    const client = await pool.connect();
+    try {
+        const { amount, description, donator, entry_date } = req.body;
+
+        if (!amount || amount === 0) {
+            return res.status(400).json({ success: false, message: 'Amount is required and must not be zero' });
+        }
+
+        const donationId = uuidv4();
+        
+        // Convert entry_date to TIMESTAMPTZ if provided
+        let entryDateValue = null;
+        if (entry_date) {
+            entryDateValue = new Date(entry_date).toISOString();
+        }
+        
+        await client.query(
+            'INSERT INTO donations (id, amount, description, donator, entry_date) VALUES ($1, $2, $3, $4, $5)',
+            [donationId, amount, description || null, donator || null, entryDateValue]
+        );
+
+        res.json({ 
+            success: true, 
+            message: 'Donation added successfully',
+            donation: {
+                id: donationId,
+                amount: parseFloat(amount),
+                description: description || '',
+                donator: donator || '',
+                entry_date: entryDateValue
+            }
+        });
+    } catch (error) {
+        console.error('Error creating donation:', error);
+        res.status(500).json({ success: false, message: 'Internal server error' });
+    } finally {
+        client.release();
+    }
+});
+
 // Health check endpoint
 app.get('/api/health', (req, res) => {
     res.json({ status: 'OK', timestamp: new Date().toISOString() });
@@ -684,6 +808,14 @@ app.get('/api/health', (req, res) => {
 
 app.get('/admin', (req, res) => {
     res.sendFile(path.join(__dirname, '../public/admin.html'));
+});
+
+app.get('/admin/donations', (req, res) => {
+    res.sendFile(path.join(__dirname, '../public/admin-donations.html'));
+});
+
+app.get('/donations', (req, res) => {
+    res.sendFile(path.join(__dirname, '../public/donations.html'));
 });
 
 // Serve the main application for all other routes

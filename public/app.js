@@ -167,6 +167,13 @@ function initializeApp() {
 
         // Set up scroll-snap page indicators
         setupScrollSnapIndicators();
+
+        // Load donation balance for button (don't block on this)
+        loadDonationBalance().catch(err => {
+            console.error('Failed to load donation balance:', err);
+        });
+    }).catch(error => {
+        console.error('Error initializing app:', error);
     });
 }
 
@@ -700,6 +707,13 @@ function setupEventListeners() {
     if (donateBtn) {
         donateBtn.addEventListener('click', donate);
     }
+
+    const reportIssueBtn = document.getElementById('report-issue-btn');
+    if (reportIssueBtn) {
+        reportIssueBtn.addEventListener('click', () => {
+            window.open('https://docs.google.com/forms/d/e/1FAIpQLScEcmD-j6pd9U9q323nQT5xMf2G8AW2X4GkUAlGOr89ZlNwGg/viewform?embedded=true', '_blank');
+        });
+    }
 }
 
 async function donate() {
@@ -771,9 +785,68 @@ function submitRsvp(action) {
 
 
 
-    const reportIssueBtn = document.getElementById('report-issue-btn');
-    if (reportIssueBtn) {
-        reportIssueBtn.addEventListener('click', () => {
-            window.open('https://docs.google.com/forms/d/e/1FAIpQLScEcmD-j6pd9U9q323nQT5xMf2G8AW2X4GkUAlGOr89ZlNwGg/viewform?embedded=true', '_blank');
-        });
+
+
+async function loadDonationBalance() {
+    try {
+        const response = await fetch(`${API_BASE_URL}/api/donations?limit=1`);
+        const data = await response.json();
+        updateDonationButton(data.balance);
+    } catch (error) {
+        console.error('Error loading donation balance:', error);
+        // Keep default emoji on error
     }
+}
+
+function updateDonationButton(balance) {
+    const donationBtn = document.getElementById('donation-btn');
+    if (!donationBtn) return;
+    
+    // Update emoji based on balance
+    if (balance > 0) {
+        donationBtn.textContent = '🤗';
+        donationBtn.classList.add('positive');
+        donationBtn.classList.remove('negative');
+    } else if (balance < 0) {
+        donationBtn.textContent = '😰';
+        donationBtn.classList.add('negative');
+        donationBtn.classList.remove('positive');
+    } else {
+        donationBtn.textContent = '🤗';
+        donationBtn.classList.remove('positive', 'negative');
+    }
+    
+    // Calculate gradient background based on balance
+    // Range: -100 (red) to +100 (green), with white at 0
+    const minRange = -100;
+    const maxRange = 100;
+    const clampedBalance = Math.max(minRange, Math.min(maxRange, balance));
+    
+    // Normalize balance to 0-1 range (0 = min, 1 = max)
+    const normalized = (clampedBalance - minRange) / (maxRange - minRange);
+    
+    // Interpolate colors: red -> white -> green
+    // Red: #ef4444 at -100 (rgb(239, 68, 68))
+    // White: #ffffff at 0 (rgb(255, 255, 255))
+    // Green: #10b981 at +100 (rgb(16, 185, 129))
+    let red, green, blue;
+    
+    if (normalized < 0.5) {
+        // Interpolate between red and white
+        const t = normalized * 2; // 0 to 1
+        red = Math.round(239 + (255 - 239) * t);   // 239 -> 255
+        green = Math.round(68 + (255 - 68) * t);   // 68 -> 255
+        blue = Math.round(68 + (255 - 68) * t);    // 68 -> 255
+    } else {
+        // Interpolate between white and green
+        const t = (normalized - 0.5) * 2; // 0 to 1
+        red = Math.round(255 + (16 - 255) * t);    // 255 -> 16
+        green = Math.round(255 + (185 - 255) * t); // 255 -> 185
+        blue = Math.round(255 + (129 - 255) * t);  // 255 -> 129
+    }
+    
+    const gradientColor = `rgb(${red}, ${green}, ${blue})`;
+    
+    // Apply gradient background to donation button
+    donationBtn.style.background = `linear-gradient(135deg, ${gradientColor} 0%, ${gradientColor} 100%)`;
+}
