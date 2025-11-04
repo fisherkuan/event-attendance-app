@@ -1,14 +1,41 @@
 const API_BASE_URL = window.location.origin;
 
+const TABLET_VIEW_QUERY = window.matchMedia('(max-width: 768px)');
+
 let donationData = {
     balance: 0,
     donations: []
 };
 
+// Debounce function
+function debounce(func, wait, immediate) {
+    var timeout;
+    return function() {
+        var context = this, args = arguments;
+        var later = function() {
+            timeout = null;
+            if (!immediate) func.apply(context, args);
+        };
+        var callNow = immediate && !timeout;
+        clearTimeout(timeout);
+        timeout = setTimeout(later, wait);
+        if (callNow) func.apply(context, args);
+    };
+}
+
 document.addEventListener('DOMContentLoaded', () => {
     loadDonations();
     setupDonateButton();
+    setupScrollSnapIndicators();
+    setupRefreshButton();
 });
+
+function setupRefreshButton() {
+    const refreshBtn = document.getElementById('refresh-donations-btn');
+    if (refreshBtn) {
+        refreshBtn.addEventListener('click', debounce(loadDonations, 250));
+    }
+}
 
 async function loadDonations() {
     try {
@@ -27,7 +54,6 @@ async function loadDonations() {
 
 function displayBalance(balance) {
     const balanceAmount = document.getElementById('balance-amount');
-    const balanceBarFill = document.getElementById('balance-bar-fill');
     
     // Format balance as currency
     const formattedBalance = new Intl.NumberFormat('en-US', {
@@ -48,29 +74,6 @@ function displayBalance(balance) {
     } else {
         balanceAmount.classList.remove('positive', 'negative');
     }
-    
-    // Calculate the balance bar
-    // We'll use a reasonable range for display, e.g., -1000 to +1000
-    const minRange = -1000;
-    const maxRange = 1000;
-    const range = maxRange - minRange;
-    
-    // Clamp balance to range for display
-    const clampedBalance = Math.max(minRange, Math.min(maxRange, balance));
-    const percentage = ((clampedBalance - minRange) / range) * 100;
-    
-    // Position fill from zero (center)
-    if (balance >= 0) {
-        balanceBarFill.style.left = '50%';
-        balanceBarFill.style.width = `${percentage - 50}%`;
-        balanceBarFill.classList.add('positive');
-        balanceBarFill.classList.remove('negative');
-    } else {
-        balanceBarFill.style.left = `${percentage}%`;
-        balanceBarFill.style.width = `${50 - percentage}%`;
-        balanceBarFill.classList.add('negative');
-        balanceBarFill.classList.remove('positive');
-    }
 }
 
 function displayDonations(donations) {
@@ -82,13 +85,13 @@ function displayDonations(donations) {
     }
     
     const donationsHtml = donations.map(donation => {
-        const date = new Date(donation.created_at);
+        // Use entry_date if available, otherwise fall back to created_at
+        const dateToUse = donation.entry_date || donation.created_at;
+        const date = new Date(dateToUse);
         const formattedDate = date.toLocaleDateString('en-US', {
             year: 'numeric',
             month: 'short',
             day: 'numeric',
-            hour: '2-digit',
-            minute: '2-digit'
         });
         
         const amount = new Intl.NumberFormat('en-US', {
@@ -98,12 +101,10 @@ function displayDonations(donations) {
         }).format(donation.amount);
         
         const amountClass = donation.amount >= 0 ? 'positive' : 'negative';
-        const emoji = donation.amount >= 0 ? '➕' : '➖';
         
         return `
             <div class="donation-entry">
                 <div class="donation-entry-header">
-                    <span class="donation-emoji" aria-hidden="true">${emoji}</span>
                     <span class="donation-amount ${amountClass}">${amount}</span>
                 </div>
                 ${donation.donator ? `<div class="donation-donator"><strong>Donator:</strong> ${escapeHtml(donation.donator)}</div>` : ''}
@@ -139,7 +140,7 @@ async function donate() {
     try {
         const keyResponse = await fetch(`${API_BASE_URL}/api/stripe-key`);
         const { publicKey } = await keyResponse.json();
-        const stripe = Stripe(publicKey);
+        const stripe = window.Stripe(publicKey);
 
         const response = await fetch(`${API_BASE_URL}/api/create-donation-checkout-session`, {
             method: 'POST',
@@ -156,5 +157,59 @@ async function donate() {
         console.error('Error creating checkout session:', error);
         alert('Error creating checkout session. Please try again.');
     }
+}
+
+// Scroll-snap page indicators for mobile
+function setupScrollSnapIndicators() {
+    // Only activate on mobile/tablet
+    if (!TABLET_VIEW_QUERY.matches) {
+        return;
+    }
+
+    const scrollContainer = document.querySelector('.scroll-snap-container');
+    const pageDots = document.querySelectorAll('.page-dot');
+    
+    if (!scrollContainer || !pageDots.length) {
+        return;
+    }
+
+    // Update active dot based on scroll position
+    const updateActiveDot = debounce(() => {
+        const scrollLeft = scrollContainer.scrollLeft;
+        const windowWidth = window.innerWidth;
+
+        // Calculate which page we're on (0 or 1)
+        const currentPage = Math.round(scrollLeft / windowWidth);
+        const maxPageIndex = pageDots.length - 1;
+        const clampedPage = Math.max(0, Math.min(maxPageIndex, currentPage));
+        
+        // Update dot active states
+        pageDots.forEach((dot, index) => {
+            if (index === clampedPage) {
+                dot.classList.add('active');
+            } else {
+                dot.classList.remove('active');
+            }
+        });
+    }, 100);
+
+    // Listen to scroll events
+    scrollContainer.addEventListener('scroll', updateActiveDot);
+    window.addEventListener('resize', updateActiveDot);
+
+    // Click handler for dots - scroll to page
+    pageDots.forEach((dot, index) => {
+        dot.addEventListener('click', () => {
+            const targetScrollLeft = index * window.innerWidth;
+            scrollContainer.scrollTo({
+                left: targetScrollLeft,
+                top: 0,
+                behavior: 'smooth'
+            });
+        });
+    });
+
+    // Initial update
+    updateActiveDot();
 }
 

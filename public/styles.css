@@ -62,6 +62,26 @@ h1, h2, h3, h4, h5, h6 {
     margin-bottom: 10px;
 }
 
+.balance-title {
+    font-size: 1.5rem;
+    font-weight: 600;
+    margin: 0 0 16px 0;
+    color: white;
+}
+
+.balance-amount {
+    transition: color 0.3s;
+    color: white;
+}
+
+.balance-amount.positive {
+    color: #10b981;
+}
+
+.balance-amount.negative {
+    color: #ef4444;
+}
+
 .app-header p {
     font-size: 1.2rem;
     font-weight: 300;
@@ -1023,6 +1043,89 @@ section h2 {
         height: 100%;
     }
 
+    /* Donations page scroll-snap styles */
+    .donations-balance-section {
+        scroll-snap-align: start;
+        scroll-snap-stop: always;
+        min-height: 100vh;
+        min-width: 100vw;
+        width: 100vw;
+        flex: 0 0 100vw;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0;
+        padding: 0;
+        border-radius: 0;
+    }
+
+    .donations-balance-section .banner-content {
+        width: 100%;
+        max-width: 650px;
+        margin: 0 auto;
+        padding: 16px 20px 32px;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        height: 100%;
+    }
+
+    .donations-balance-section .balance-title {
+        display: block !important;
+        margin-bottom: 24px;
+    }
+
+    /* Show mobile-only elements on mobile */
+    .mobile-only {
+        display: block;
+    }
+    
+    .support-buttons .mobile-only {
+        display: inline-block;
+    }
+    
+    .banner-content .copyright.mobile-only {
+        display: block;
+        margin-top: 20px;
+    }
+
+    /* Hide desktop bottom banner on mobile */
+    .donations-bottom-banner {
+        display: none;
+    }
+
+    .donations-entries-section {
+        scroll-snap-align: start;
+        scroll-snap-stop: always;
+        min-height: 100vh;
+        min-width: 100vw;
+        width: 100vw;
+        flex: 0 0 100vw;
+        display: flex;
+        flex-direction: column;
+        padding: 24px 20px;
+        margin: 0;
+        border-radius: 0;
+        box-shadow: none;
+        border: none;
+        background: white;
+        overflow-x: hidden;
+        overflow-y: visible;
+    }
+
+    .donations-entries-section h2 {
+        flex-shrink: 0;
+        margin-top: 0;
+    }
+
+    #donations-list {
+        flex: 1;
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
+        margin-bottom: 80px; /* Space for page indicators */
+    }
+
     .app-header-links {
         display: none;
     }
@@ -1212,6 +1315,11 @@ section h2 {
     .app-header h1,
     .header-subtitle {
         display: none !important;
+    }
+
+    /* Keep balance-title visible on donations page */
+    .donations-balance-section .balance-title {
+        display: block !important;
     }
 
     .calendar-filter-container {
@@ -1585,7 +1693,40 @@ section h2 {
 }
 
 /* Donation Page Styles */
-.donations-balance-section,
+.donations-balance-section {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    text-align: center;
+    padding: 30px 20px;
+}
+
+.donations-balance-section .banner-content {
+    width: 100%;
+    max-width: 650px;
+    margin: 0 auto;
+    padding: 16px 20px 32px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+}
+
+/* Hide mobile-only elements on desktop */
+.mobile-only {
+    display: none;
+}
+
+/* Desktop: Hide bottom banner elements that are in balance section */
+.donations-bottom-banner {
+    display: none;
+}
+
+@media (min-width: 769px) {
+    .donations-bottom-banner {
+        display: block;
+    }
+}
+
 .donations-entries-section {
     background: #fff;
     border: 1px solid #e2e8f0;
@@ -1594,7 +1735,6 @@ section h2 {
     margin-bottom: 24px;
 }
 
-.donations-balance-section h2,
 .donations-entries-section h2 {
     margin-top: 0;
     margin-bottom: 20px;
@@ -1606,60 +1746,6 @@ section h2 {
     font-weight: 600;
 }
 
-.balance-container {
-    text-align: center;
-}
-
-.balance-amount {
-    font-size: 3rem;
-    font-weight: 700;
-    margin-bottom: 24px;
-    color: #333;
-    transition: color 0.3s;
-}
-
-.balance-amount.positive {
-    color: #10b981;
-}
-
-.balance-amount.negative {
-    color: #ef4444;
-}
-
-.balance-bar-container {
-    width: 100%;
-    max-width: 600px;
-    margin: 0 auto;
-}
-
-.balance-bar {
-    position: relative;
-    width: 100%;
-    height: 24px;
-    background: #e5e7eb;
-    border-radius: 12px;
-    overflow: hidden;
-}
-
-.balance-bar-fill {
-    position: absolute;
-    top: 0;
-    height: 100%;
-    transition: width 0.5s, left 0.5s;
-    border-radius: 12px;
-}
-
-.balance-bar-fill.positive {
-    background: linear-gradient(90deg, #10b981 0%, #059669 100%);
-}
-
-.balance-bar-fill.negative {
-    background: linear-gradient(90deg, #ef4444 0%, #dc2626 100%);
-}
-
-.balance-bar-zero {
-    display: none;
-}
 
 .donations-list {
     display: grid;
@@ -1737,14 +1823,7 @@ section h2 {
 /* Donation Button Styles */
 .donation-btn {
     font-size: 28px;
-}
-
-.donation-btn.positive {
-    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
-}
-
-.donation-btn.negative {
-    background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+    transition: background 0.3s ease;
 }
 
 /* Admin Donations Styles */

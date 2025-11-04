@@ -189,8 +189,8 @@ async function initializeDatabase() {
                 amount DECIMAL(10, 2) NOT NULL,
                 description TEXT,
                 donator VARCHAR(255),
-                created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-                created_by VARCHAR(255)
+                entry_date TIMESTAMPTZ,
+                created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
             );
         `);
         
@@ -202,6 +202,24 @@ async function initializeDatabase() {
             if (!error.message.includes('already exists') && !error.message.includes('duplicate')) {
                 console.error('Error adding donator column:', error);
             }
+        }
+        
+        // Add entry_date column if it doesn't exist (for existing tables)
+        try {
+            await client.query('ALTER TABLE donations ADD COLUMN entry_date TIMESTAMPTZ');
+        } catch (error) {
+            // Column already exists, ignore the error
+            if (!error.message.includes('already exists') && !error.message.includes('duplicate')) {
+                console.error('Error adding entry_date column:', error);
+            }
+        }
+        
+        // Remove created_by column if it exists (for existing tables)
+        try {
+            await client.query('ALTER TABLE donations DROP COLUMN IF EXISTS created_by');
+        } catch (error) {
+            // Ignore errors if column doesn't exist or can't be dropped
+            console.log('Note: created_by column removal attempted (may not exist):', error.message);
         }
         console.log('Database schema initialized.');
     } catch (error) {
@@ -708,9 +726,9 @@ app.get('/api/donations', async (req, res) => {
         
         // Get latest donations
         const donationsResult = await client.query(`
-            SELECT id, amount, description, donator, created_at, created_by
+            SELECT id, amount, description, donator, entry_date, created_at
             FROM donations
-            ORDER BY created_at DESC
+            ORDER BY COALESCE(entry_date, created_at) DESC
             LIMIT $1
         `, [limit]);
 
@@ -729,8 +747,8 @@ app.get('/api/donations', async (req, res) => {
                 amount: parseFloat(row.amount),
                 description: row.description || '',
                 donator: row.donator || '',
-                created_at: row.created_at,
-                created_by: row.created_by || ''
+                entry_date: row.entry_date || null,
+                created_at: row.created_at
             }))
         });
     } catch (error) {
@@ -745,7 +763,7 @@ app.get('/api/donations', async (req, res) => {
 app.post('/api/donations', async (req, res) => {
     const client = await pool.connect();
     try {
-        const { amount, description, donator, created_by } = req.body;
+        const { amount, description, donator, entry_date } = req.body;
 
         if (!amount || amount === 0) {
             return res.status(400).json({ success: false, message: 'Amount is required and must not be zero' });
@@ -753,9 +771,15 @@ app.post('/api/donations', async (req, res) => {
 
         const donationId = uuidv4();
         
+        // Convert entry_date to TIMESTAMPTZ if provided
+        let entryDateValue = null;
+        if (entry_date) {
+            entryDateValue = new Date(entry_date).toISOString();
+        }
+        
         await client.query(
-            'INSERT INTO donations (id, amount, description, donator, created_by) VALUES ($1, $2, $3, $4, $5)',
-            [donationId, amount, description || null, donator || null, created_by || null]
+            'INSERT INTO donations (id, amount, description, donator, entry_date) VALUES ($1, $2, $3, $4, $5)',
+            [donationId, amount, description || null, donator || null, entryDateValue]
         );
 
         res.json({ 
@@ -766,7 +790,7 @@ app.post('/api/donations', async (req, res) => {
                 amount: parseFloat(amount),
                 description: description || '',
                 donator: donator || '',
-                created_by: created_by || ''
+                entry_date: entryDateValue
             }
         });
     } catch (error) {

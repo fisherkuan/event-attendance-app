@@ -12,7 +12,7 @@ function handleSubmit(e) {
     const amount = parseFloat(formData.get('amount'));
     const donator = formData.get('donator').trim();
     const description = formData.get('description').trim();
-    const created_by = formData.get('created_by').trim();
+    const entryDate = formData.get('entry_date');
     
     if (!amount || amount === 0) {
         showMessage('Amount is required and cannot be zero', 'error');
@@ -23,7 +23,7 @@ function handleSubmit(e) {
         amount: amount,
         donator: donator || null,
         description: description || null,
-        created_by: created_by || null
+        entry_date: entryDate || null
     };
     
     submitDonation(donationData);

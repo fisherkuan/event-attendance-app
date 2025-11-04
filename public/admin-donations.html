@@ -17,7 +17,7 @@
 
         <main>
             <section class="admin-donations-section">
-                <h2><span class="section-emoji" aria-hidden="true">➕</span> Add Donation Entry</h2>
+                <h2><span class="section-emoji" aria-hidden="true">➕</span> Add Entry</h2>
                 
                 <form id="donation-form" class="donation-form">
                     <div class="form-group">
@@ -55,14 +55,13 @@
                     </div>
 
                     <div class="form-group">
-                        <label for="created_by">Created By (optional)</label>
+                        <label for="entry_date">Entry Date (optional)</label>
                         <input 
-                            type="text" 
-                            id="created_by" 
-                            name="created_by" 
-                            placeholder="Your name"
+                            type="date" 
+                            id="entry_date" 
+                            name="entry_date"
                         >
-                        <small class="form-help">Who is entering this record</small>
+                        <small class="form-help">Date of the donation/expense. If not provided, current date will be used.</small>
                     </div>
 
                     <div class="form-actions">
@@ -73,23 +72,17 @@
 
                 <div id="form-message" class="form-message"></div>
             </section>
-
-            <section class="admin-links-section">
-                <h2><span class="section-emoji" aria-hidden="true">🔗</span> Links</h2>
-                <div class="admin-links">
-                    <a href="/donations" class="admin-link-btn" target="_blank">View Public Page</a>
-                    <a href="/admin" class="admin-link-btn">Back to Admin</a>
-                    <a href="/" class="admin-link-btn">Back to Home</a>
-                </div>
-            </section>
         </main>
 
         <div class="bottom-banner">
-            <div class="banner-content">
+            <div class="container">
+                <div class="support-buttons">
+                    <a href="/" class="support-btn">Back to Home</a>
+                    <a href="/donations" class="support-btn">View Balance & Entries</a>
+                </div>
                 <p class="copyright">&copy; Built by Fisher Kuan</p>
             </div>
         </div>
-    </div>
 
     <script src="/js/admin-donations.js"></script>
 </body>

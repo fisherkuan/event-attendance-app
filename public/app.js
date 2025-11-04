@@ -804,15 +804,49 @@ function updateDonationButton(balance) {
     
     // Update emoji based on balance
     if (balance > 0) {
-        donationBtn.textContent = '💰';
+        donationBtn.textContent = '🤗';
         donationBtn.classList.add('positive');
         donationBtn.classList.remove('negative');
     } else if (balance < 0) {
-        donationBtn.textContent = '💸';
+        donationBtn.textContent = '😰';
         donationBtn.classList.add('negative');
         donationBtn.classList.remove('positive');
     } else {
-        donationBtn.textContent = '💰';
+        donationBtn.textContent = '🤗';
         donationBtn.classList.remove('positive', 'negative');
     }
+    
+    // Calculate gradient background based on balance
+    // Range: -100 (red) to +100 (green), with white at 0
+    const minRange = -100;
+    const maxRange = 100;
+    const clampedBalance = Math.max(minRange, Math.min(maxRange, balance));
+    
+    // Normalize balance to 0-1 range (0 = min, 1 = max)
+    const normalized = (clampedBalance - minRange) / (maxRange - minRange);
+    
+    // Interpolate colors: red -> white -> green
+    // Red: #ef4444 at -100 (rgb(239, 68, 68))
+    // White: #ffffff at 0 (rgb(255, 255, 255))
+    // Green: #10b981 at +100 (rgb(16, 185, 129))
+    let red, green, blue;
+    
+    if (normalized < 0.5) {
+        // Interpolate between red and white
+        const t = normalized * 2; // 0 to 1
+        red = Math.round(239 + (255 - 239) * t);   // 239 -> 255
+        green = Math.round(68 + (255 - 68) * t);   // 68 -> 255
+        blue = Math.round(68 + (255 - 68) * t);    // 68 -> 255
+    } else {
+        // Interpolate between white and green
+        const t = (normalized - 0.5) * 2; // 0 to 1
+        red = Math.round(255 + (16 - 255) * t);    // 255 -> 16
+        green = Math.round(255 + (185 - 255) * t); // 255 -> 185
+        blue = Math.round(255 + (129 - 255) * t);  // 255 -> 129
+    }
+    
+    const gradientColor = `rgb(${red}, ${green}, ${blue})`;
+    
+    // Apply gradient background to donation button
+    donationBtn.style.background = `linear-gradient(135deg, ${gradientColor} 0%, ${gradientColor} 100%)`;
 }

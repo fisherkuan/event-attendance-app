@@ -12,54 +12,52 @@
 </head>
 <body>
 <div class="container">
-    <div class="hero">
-        <header class="app-header">
-            <h1 class="app-title">Donations</h1>
-            <p class="app-header-links">
-                <a href="/">Home</a>
-                <span class="app-header-links-separator" aria-hidden="true">|</span>
-                <a href="/faq.html">FAQ</a>
-            </p>
-        </header>
+    <div class="scroll-snap-container">
+        <!-- Page 1: Balance and Support -->
+        <section class="donations-balance-section">
+            <div class="banner-content">
+                <h1 class="balance-title" id="balance-title" style="height: 0.5rem;">Balance</h1>
+                <h1 class="balance-amount" id="balance-amount" style="font-size: 5rem; font-weight: 500; margin-bottom: 2rem;">
+                    €0.00
+                </h1>
+                <div class="support-buttons">
+                    <button id="donate-btn" class="support-btn">
+                        <img src="/icons/one-time-donation.png" alt="Donate" class="btn-icon">
+                        Donate
+                    </button>
+                    <a href="/" class="support-btn mobile-only">Back to Home</a>
+                </div>
+                <div class="support-header">
+                    <p class="support-line" data-index="0">Hosting this web app costs money—your support keeps it running.</p>
+                    <p class="support-line" data-index="1">All donations go directly to operating expenses.</p>
+                </div>
+                <p class="copyright mobile-only">&copy; Built by Fisher Kuan</p>
+            </div>
+        </section>
+
+        <!-- Page 2: Entries -->
+        <main>
+            <section class="donations-entries-section">
+                <h2><span class="section-emoji" aria-hidden="true">📋</span> Entries <span id="refresh-donations-btn" class="refresh-btn" title="Refresh entries"></span></h2>
+                <div id="donations-list" class="donations-list">
+                    <div class="loading">Loading entries...</div>
+                </div>
+            </section>
+        </main>
     </div>
 
-    <main>
-        <!-- Balance Section -->
-        <section class="donations-balance-section">
-            <h2><span class="section-emoji" aria-hidden="true">💰</span> Balance</h2>
-            <div class="balance-container">
-                <div class="balance-amount" id="balance-amount">€0.00</div>
-                <div class="balance-bar-container">
-                    <div class="balance-bar" id="balance-bar">
-                        <div class="balance-bar-fill" id="balance-bar-fill"></div>
-                    </div>
-                </div>
-            </div>
-        </section>
+    <!-- Page indicators -->
+    <div class="page-indicators">
+        <span class="page-dot active" data-page="0"></span>
+        <span class="page-dot" data-page="1"></span>
+    </div>
 
-        <!-- Latest Entries Section -->
-        <section class="donations-entries-section">
-            <h2><span class="section-emoji" aria-hidden="true">📋</span> Latest Entries</h2>
-            <div id="donations-list" class="donations-list">
-                <div class="loading">Loading donations...</div>
-            </div>
-        </section>
-    </main>
-
-    <div class="bottom-banner">
-        <div class="banner-content">
+    <!-- Bottom banner for desktop -->
+    <div class="bottom-banner donations-bottom-banner">
+        <div class="container">
             <div class="support-buttons">
-                <button id="donate-btn" class="support-btn">
-                    <img src="/icons/one-time-donation.png" alt="Donate" class="btn-icon">
-                    Donate
-                </button>
                 <a href="/" class="support-btn">Back to Home</a>
             </div>
-            <div class="support-header">
-                <p class="support-line" data-index="0">Hosting this web app costs money—your support keeps it running.</p>
-                <p class="support-line" data-index="1">All donations go directly to operating expenses.</p>
-            </div>
-            <div style="height: 1.5rem;"></div>
             <p class="copyright">&copy; Built by Fisher Kuan</p>
         </div>
     </div>
