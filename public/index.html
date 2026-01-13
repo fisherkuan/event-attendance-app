@@ -147,7 +147,26 @@
                 </div>
             </div>
 
-        
+    <!-- Attendee List Bottom Sheet (Mobile) -->
+    <div id="attendee-sheet" class="bottom-sheet hidden">
+        <div class="bottom-sheet-backdrop"></div>
+        <div class="bottom-sheet-content">
+            <div class="bottom-sheet-header">
+                <h3 id="attendee-sheet-title">Attendees</h3>
+            </div>
+            <div class="bottom-sheet-body">
+                <ul id="attendee-sheet-list" class="attendee-sheet-list">
+                    <!-- Populated dynamically -->
+                </ul>
+                <p id="attendee-sheet-empty" class="attendee-sheet-empty hidden">No attendees yet</p>
+            </div>
+            <div class="bottom-sheet-footer">
+                <button class="bottom-sheet-close-btn" onclick="closeAttendeeSheet()">Close</button>
+            </div>
+        </div>
+    </div>
+
+
     </main>
 
     <div class="bottom-banner">
