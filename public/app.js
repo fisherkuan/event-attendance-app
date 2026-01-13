@@ -683,7 +683,7 @@ function closeRemoveRsvpModal() {
 
 function submitRemoveRsvp() {
     if (!currentEventForRsvp) {
-        alert('No event selected for RSVP');
+        showToast('No event selected for RSVP', 'error');
         return;
     }
 
@@ -693,6 +693,12 @@ function submitRemoveRsvp() {
         action: 'remove',
         attendeeName: attendeeName
     };
+
+    // Disable button during API call
+    const submitBtn = document.querySelector('.rsvp-remove-btn');
+    const originalText = submitBtn.querySelector('.text').textContent;
+    submitBtn.disabled = true;
+    submitBtn.querySelector('.text').textContent = 'Removing...';
 
     // Submit RSVP to server
     fetch(`${API_BASE_URL}/api/rsvp`, {
@@ -704,16 +710,31 @@ function submitRemoveRsvp() {
     })
     .then(response => response.json())
     .then(result => {
+        submitBtn.disabled = false;
+        submitBtn.querySelector('.text').textContent = originalText;
+
         if (result.success) {
-            alert(result.message);
+            // Success feedback with animation
+            submitBtn.classList.add('pulse-success');
+            setTimeout(() => submitBtn.classList.remove('pulse-success'), 400);
+
+            // Haptic feedback if supported
+            if (navigator.vibrate) {
+                navigator.vibrate(50);
+            }
+
             closeRemoveRsvpModal();
         } else {
-            alert('Error: ' + result.message);
+            showToast(result.message || 'Error removing RSVP', 'error');
+            submitBtn.classList.add('shake');
+            setTimeout(() => submitBtn.classList.remove('shake'), 300);
         }
     })
     .catch(error => {
         console.error('Error submitting RSVP:', error);
-        alert('Error submitting RSVP. Please try again.');
+        submitBtn.disabled = false;
+        submitBtn.querySelector('.text').textContent = originalText;
+        showToast('Connection error - please try again', 'error');
     });
 }
 
@@ -798,21 +819,31 @@ async function donate() {
 
 function submitRsvp(action) {
     if (!currentEventForRsvp) {
-        alert('No event selected for RSVP');
+        showToast('No event selected for RSVP', 'error');
         return;
     }
-    
+
     const attendeeName = document.getElementById('attendee-name').value.trim();
     if (!attendeeName) {
-        alert('Please enter your name.');
+        showToast('Please enter your name', 'error');
+        const input = document.getElementById('attendee-name');
+        input.classList.add('shake');
+        setTimeout(() => input.classList.remove('shake'), 300);
         return;
     }
+
     const rsvpData = {
         eventId: currentEventForRsvp.id,
         action: action,
         attendeeName: attendeeName
     };
-    
+
+    // Disable button during API call
+    const submitBtn = document.querySelector('.rsvp-add-btn');
+    const originalText = submitBtn.querySelector('.text').textContent;
+    submitBtn.disabled = true;
+    submitBtn.querySelector('.text').textContent = 'Submitting...';
+
     // Submit RSVP to server
     fetch(`${API_BASE_URL}/api/rsvp`, {
         method: 'POST',
@@ -823,16 +854,32 @@ function submitRsvp(action) {
     })
     .then(response => response.json())
     .then(result => {
+        submitBtn.disabled = false;
+        submitBtn.querySelector('.text').textContent = originalText;
+
         if (result.success) {
-            alert(result.message);
+            // Success feedback with animation
+            submitBtn.classList.add('pulse-success');
+            setTimeout(() => submitBtn.classList.remove('pulse-success'), 400);
+
+            // Haptic feedback if supported
+            if (navigator.vibrate) {
+                navigator.vibrate(50);
+            }
+
             closeRsvpModal();
         } else {
-            alert('Error: ' + result.message);
+            // Error feedback
+            showToast(result.message || 'Error submitting RSVP', 'error');
+            submitBtn.classList.add('shake');
+            setTimeout(() => submitBtn.classList.remove('shake'), 300);
         }
     })
     .catch(error => {
         console.error('Error submitting RSVP:', error);
-        alert('Error submitting RSVP. Please try again.');
+        submitBtn.disabled = false;
+        submitBtn.querySelector('.text').textContent = originalText;
+        showToast('Connection error - please try again', 'error');
     });
 }
 

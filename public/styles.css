@@ -1004,11 +1004,13 @@ section h2 {
     }
 }
 
-.rsvp-add-btn-small.pulse-success {
+.rsvp-add-btn-small.pulse-success,
+.rsvp-add-btn.pulse-success {
     animation: pulse-green 400ms ease-out;
 }
 
-.rsvp-remove-btn-small.pulse-success {
+.rsvp-remove-btn-small.pulse-success,
+.rsvp-remove-btn.pulse-success {
     animation: pulse-red 400ms ease-out;
 }
 
