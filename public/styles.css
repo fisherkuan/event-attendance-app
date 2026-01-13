@@ -979,6 +979,55 @@ section h2 {
     background: #3b82f6;
 }
 
+/* Button feedback animations */
+@keyframes pulse-green {
+    0% {
+        box-shadow: 0 0 0 0 rgba(72, 187, 120, 0.7);
+    }
+    50% {
+        box-shadow: 0 0 0 10px rgba(72, 187, 120, 0);
+    }
+    100% {
+        box-shadow: 0 0 0 0 rgba(72, 187, 120, 0);
+    }
+}
+
+@keyframes pulse-red {
+    0% {
+        box-shadow: 0 0 0 0 rgba(245, 101, 101, 0.7);
+    }
+    50% {
+        box-shadow: 0 0 0 10px rgba(245, 101, 101, 0);
+    }
+    100% {
+        box-shadow: 0 0 0 0 rgba(245, 101, 101, 0);
+    }
+}
+
+.rsvp-add-btn-small.pulse-success {
+    animation: pulse-green 400ms ease-out;
+}
+
+.rsvp-remove-btn-small.pulse-success {
+    animation: pulse-red 400ms ease-out;
+}
+
+@keyframes shake {
+    0%, 100% {
+        transform: translateX(0);
+    }
+    10%, 30%, 50%, 70%, 90% {
+        transform: translateX(-4px);
+    }
+    20%, 40%, 60%, 80% {
+        transform: translateX(4px);
+    }
+}
+
+.shake {
+    animation: shake 300ms ease-in-out;
+}
+
 /* Responsive design */
 @media (max-width: 768px) {
     .container {
