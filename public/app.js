@@ -81,6 +81,60 @@ function hideToast(toast) {
     }
 }
 
+// Attendee bottom sheet (mobile)
+function openAttendeeSheet(event) {
+    const sheet = document.getElementById('attendee-sheet');
+    const title = document.getElementById('attendee-sheet-title');
+    const list = document.getElementById('attendee-sheet-list');
+    const empty = document.getElementById('attendee-sheet-empty');
+
+    // Set title
+    const attendingCount = event.attendingCount || 0;
+    const limitText = event.attendance_limit ? `/${event.attendance_limit}` : '';
+    title.textContent = `Attendees (${attendingCount}${limitText})`;
+
+    // Populate list
+    list.innerHTML = '';
+    if (event.attendees && event.attendees.length > 0) {
+        event.attendees.forEach(attendee => {
+            const li = document.createElement('li');
+            li.textContent = attendee;
+            list.appendChild(li);
+        });
+        list.classList.remove('hidden');
+        empty.classList.add('hidden');
+    } else {
+        list.classList.add('hidden');
+        empty.classList.remove('hidden');
+    }
+
+    // Show sheet
+    sheet.classList.remove('hidden');
+    requestAnimationFrame(() => {
+        sheet.classList.add('show');
+    });
+
+    // Prevent body scroll
+    document.body.style.overflow = 'hidden';
+}
+
+function closeAttendeeSheet() {
+    const sheet = document.getElementById('attendee-sheet');
+
+    sheet.classList.remove('show');
+    setTimeout(() => {
+        sheet.classList.add('hidden');
+        document.body.style.overflow = '';
+    }, 300);
+}
+
+// Detect if device is touch-enabled
+function isTouchDevice() {
+    return ('ontouchstart' in window) ||
+           (navigator.maxTouchPoints > 0) ||
+           (navigator.msMaxTouchPoints > 0);
+}
+
 function escapeAttribute(value) {
     return escapeHtml(value).replace(/\n/g, '&#10;');
 }
@@ -563,6 +617,12 @@ function displayEvents() {
             }
             const sanitizedAttendanceText = escapeHtml(attendanceText);
 
+            // On touch devices, make attendance info clickable to open bottom sheet
+            const attendanceClick = isTouchDevice()
+                ? `onclick="event.preventDefault(); openAttendeeSheet(currentEvents.find(e => e.id === '${sanitizedEventId}'))"`
+                : '';
+            const attendanceCursor = isTouchDevice() ? 'style="cursor: pointer;"' : '';
+
             const rsvpButtons = isPastEvent
                 ? '<div class="rsvp-disabled">Past Event - RSVP Closed</div>'
                 : `
@@ -577,7 +637,7 @@ function displayEvents() {
                 `;
 
             footerContent = `
-                    <div class="attendance-info" title="${attendanceInfoAttr}">
+                    <div class="attendance-info" title="${attendanceInfoAttr}" ${attendanceClick} ${attendanceCursor} tabindex="0" role="button" aria-label="View attendee list">
                         <span>${sanitizedAttendanceText}</span>
                     </div>
                     ${rsvpButtons}
@@ -771,6 +831,12 @@ function setupEventListeners() {
             closeRsvpModal();
         }
     });
+
+    // Attendee sheet backdrop click
+    const attendeeSheet = document.getElementById('attendee-sheet');
+    if (attendeeSheet) {
+        attendeeSheet.querySelector('.bottom-sheet-backdrop').addEventListener('click', closeAttendeeSheet);
+    }
 
     // Refresh button
     const refreshBtn = document.getElementById('refresh-events-btn');
