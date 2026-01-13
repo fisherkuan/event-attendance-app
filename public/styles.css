@@ -577,6 +577,21 @@ section h2 {
     color: #ccd2d9;
 }
 
+@media (max-width: 768px) {
+    .rsvp-add-btn-small:active:not(:disabled),
+    .rsvp-remove-btn-small:active:not(:disabled) {
+        transform: scale(0.95);
+        transition: transform 150ms ease;
+    }
+
+    /* Remove hover effects on mobile */
+    .rsvp-add-btn-small:hover,
+    .rsvp-remove-btn-small:hover {
+        transform: none;
+        box-shadow: none;
+    }
+}
+
 .rsvp-disabled {
     background: #f7fafc;
     color: #a0aec0;
@@ -1443,9 +1458,17 @@ section h2 {
         gap: 12px;
     }
     
+    .rsvp-add-btn-small,
+    .rsvp-remove-btn-small {
+        flex: 0 0 44px;
+        width: 44px;
+        height: 44px;
+        font-size: 1.3rem;
+    }
+
     .event-rsvp-buttons {
         flex-direction: row;
-        gap: 8px;
+        gap: 12px;
     }
 
     .app-header h1 {
