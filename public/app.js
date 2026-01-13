@@ -83,43 +83,64 @@ function hideToast(toast) {
 
 // Attendee bottom sheet (mobile)
 function openAttendeeSheet(event) {
+    if (!event) {
+        console.warn('openAttendeeSheet called without event object');
+        return;
+    }
+
     const sheet = document.getElementById('attendee-sheet');
     const title = document.getElementById('attendee-sheet-title');
     const list = document.getElementById('attendee-sheet-list');
     const empty = document.getElementById('attendee-sheet-empty');
 
-    // Set title
-    const attendingCount = event.attendingCount || 0;
-    const limitText = event.attendance_limit ? `/${event.attendance_limit}` : '';
-    title.textContent = `Attendees (${attendingCount}${limitText})`;
-
-    // Populate list
-    list.innerHTML = '';
-    if (event.attendees && event.attendees.length > 0) {
-        event.attendees.forEach(attendee => {
-            const li = document.createElement('li');
-            li.textContent = attendee;
-            list.appendChild(li);
-        });
-        list.classList.remove('hidden');
-        empty.classList.add('hidden');
-    } else {
-        list.classList.add('hidden');
-        empty.classList.remove('hidden');
+    if (!sheet || !title || !list || !empty) {
+        console.error('Bottom sheet DOM elements not found');
+        return;
     }
 
-    // Show sheet
-    sheet.classList.remove('hidden');
-    requestAnimationFrame(() => {
-        sheet.classList.add('show');
-    });
+    try {
+        // Set title
+        const attendingCount = event.attendingCount || 0;
+        const limitText = event.attendance_limit ? `/${event.attendance_limit}` : '';
+        title.textContent = `Attendees (${attendingCount}${limitText})`;
 
-    // Prevent body scroll
-    document.body.style.overflow = 'hidden';
+        // Populate list
+        list.innerHTML = '';
+        if (event.attendees && event.attendees.length > 0) {
+            event.attendees.forEach(attendee => {
+                const li = document.createElement('li');
+                li.textContent = attendee;
+                list.appendChild(li);
+            });
+            list.classList.remove('hidden');
+            empty.classList.add('hidden');
+        } else {
+            list.classList.add('hidden');
+            empty.classList.remove('hidden');
+        }
+
+        // Show sheet
+        sheet.classList.remove('hidden');
+        requestAnimationFrame(() => {
+            sheet.classList.add('show');
+        });
+
+        // Prevent body scroll
+        document.body.style.overflow = 'hidden';
+    } catch (error) {
+        console.error('Error opening attendee sheet:', error);
+        document.body.style.overflow = ''; // Restore scroll
+        sheet.classList.add('hidden');
+    }
 }
 
 function closeAttendeeSheet() {
     const sheet = document.getElementById('attendee-sheet');
+
+    if (!sheet) {
+        console.warn('Bottom sheet element not found');
+        return;
+    }
 
     sheet.classList.remove('show');
     setTimeout(() => {
@@ -619,7 +640,7 @@ function displayEvents() {
 
             // On touch devices, make attendance info clickable to open bottom sheet
             const attendanceClick = isTouchDevice()
-                ? `onclick="event.preventDefault(); openAttendeeSheet(currentEvents.find(e => e.id === '${sanitizedEventId}'))"`
+                ? `data-sheet-event-id="${sanitizedEventId}"`
                 : '';
             const attendanceCursor = isTouchDevice() ? 'style="cursor: pointer;"' : '';
 
@@ -832,11 +853,47 @@ function setupEventListeners() {
         }
     });
 
-    // Attendee sheet backdrop click
+    // Attendee sheet
     const attendeeSheet = document.getElementById('attendee-sheet');
     if (attendeeSheet) {
-        attendeeSheet.querySelector('.bottom-sheet-backdrop').addEventListener('click', closeAttendeeSheet);
+        const backdrop = attendeeSheet.querySelector('.bottom-sheet-backdrop');
+        const closeBtn = attendeeSheet.querySelector('.bottom-sheet-close-btn');
+
+        if (backdrop) {
+            backdrop.addEventListener('click', closeAttendeeSheet);
+        }
+        if (closeBtn) {
+            closeBtn.addEventListener('click', closeAttendeeSheet);
+        }
     }
+
+    // Attendance info click handler for touch devices
+    document.addEventListener('click', (e) => {
+        const attendanceInfo = e.target.closest('.attendance-info[data-sheet-event-id]');
+        if (attendanceInfo && isTouchDevice()) {
+            e.preventDefault();
+            const eventId = attendanceInfo.getAttribute('data-sheet-event-id');
+            const event = currentEvents.find(ev => ev.id === eventId);
+            if (event) {
+                openAttendeeSheet(event);
+            }
+        }
+    });
+
+    // Keyboard support for attendance info
+    document.addEventListener('keydown', (e) => {
+        if ((e.key === 'Enter' || e.key === ' ') &&
+            e.target.classList.contains('attendance-info') &&
+            e.target.hasAttribute('data-sheet-event-id') &&
+            isTouchDevice()) {
+            e.preventDefault();
+            const eventId = e.target.getAttribute('data-sheet-event-id');
+            const event = currentEvents.find(ev => ev.id === eventId);
+            if (event) {
+                openAttendeeSheet(event);
+            }
+        }
+    });
 
     // Refresh button
     const refreshBtn = document.getElementById('refresh-events-btn');
