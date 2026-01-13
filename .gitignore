@@ -164,3 +164,6 @@ temp/
 # Claude Code planning documents
 .plans/
 .claude/
+
+# Git worktrees
+.worktrees/
