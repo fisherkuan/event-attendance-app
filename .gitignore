@@ -160,3 +160,7 @@ data/
 # Temporary files
 tmp/
 temp/
+
+# Claude Code planning documents
+.plans/
+.claude/
