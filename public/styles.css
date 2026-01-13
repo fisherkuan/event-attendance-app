@@ -942,6 +942,43 @@ section h2 {
     display: none; /* Hidden on desktop */
 }
 
+/* Toast Notifications */
+.toast {
+    position: fixed;
+    top: 20px;
+    left: 50%;
+    transform: translateX(-50%) translateY(-100px);
+    background: #1f2937;
+    color: white;
+    padding: 12px 24px;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    z-index: 1001;
+    opacity: 0;
+    transition: transform 300ms ease-out, opacity 300ms ease-out;
+    pointer-events: none;
+    max-width: 90%;
+    text-align: center;
+}
+
+.toast.show {
+    transform: translateX(-50%) translateY(0);
+    opacity: 1;
+    pointer-events: auto;
+}
+
+.toast.error {
+    background: #ef4444;
+}
+
+.toast.success {
+    background: #10b981;
+}
+
+.toast.info {
+    background: #3b82f6;
+}
+
 /* Responsive design */
 @media (max-width: 768px) {
     .container {

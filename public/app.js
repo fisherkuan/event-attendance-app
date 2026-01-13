@@ -26,6 +26,61 @@ function escapeHtml(value) {
         .replace(/'/g, '&#39;');
 }
 
+// Toast notification system
+let toastTimeout = null;
+
+function showToast(message, type = 'info', duration = 4000) {
+    // Remove existing toast if any
+    const existingToast = document.querySelector('.toast');
+    if (existingToast) {
+        existingToast.remove();
+        if (toastTimeout) {
+            clearTimeout(toastTimeout);
+        }
+    }
+
+    // Create toast element
+    const toast = document.createElement('div');
+    toast.className = `toast ${type}`;
+    toast.textContent = message;
+    toast.setAttribute('role', 'alert');
+    toast.setAttribute('aria-live', 'polite');
+
+    // Add to DOM
+    document.body.appendChild(toast);
+
+    // Trigger animation
+    requestAnimationFrame(() => {
+        toast.classList.add('show');
+    });
+
+    // Auto-dismiss
+    toastTimeout = setTimeout(() => {
+        hideToast(toast);
+    }, duration);
+
+    // Click to dismiss
+    toast.addEventListener('click', () => {
+        hideToast(toast);
+    });
+
+    return toast;
+}
+
+function hideToast(toast) {
+    if (!toast) return;
+
+    toast.classList.remove('show');
+    setTimeout(() => {
+        toast.remove();
+    }, 300);
+
+    if (toastTimeout) {
+        clearTimeout(toastTimeout);
+        toastTimeout = null;
+    }
+}
+
 function escapeAttribute(value) {
     return escapeHtml(value).replace(/\n/g, '&#10;');
 }
