@@ -359,6 +359,28 @@ function setupScrollSnapIndicators() {
 
     // Initial update
     updateActiveDot();
+
+    // Show first-time swipe hint
+    if (!localStorage.getItem('swipeHintShown') && TABLET_VIEW_QUERY.matches) {
+        const hint = document.getElementById('swipe-hint');
+        if (hint) {
+            setTimeout(() => {
+                hint.classList.remove('hidden');
+                hint.classList.add('show');
+            }, 1000);
+
+            // Hide after 3 seconds or on first scroll
+            const hideHint = () => {
+                hint.classList.remove('show');
+                setTimeout(() => hint.classList.add('hidden'), 300);
+                localStorage.setItem('swipeHintShown', 'true');
+                scrollContainer.removeEventListener('scroll', hideHint);
+            };
+
+            setTimeout(hideHint, 4000);
+            scrollContainer.addEventListener('scroll', hideHint, { once: true });
+        }
+    }
 }
 
 // Set up WebSocket connection

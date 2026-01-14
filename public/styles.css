@@ -1419,6 +1419,45 @@ section h2 {
         }
     }
 
+    /* Swipe hint for first-time users */
+    .swipe-hint {
+        position: fixed;
+        bottom: 90px;
+        left: 50%;
+        transform: translateX(-50%);
+        z-index: 99;
+        background: rgba(0, 0, 0, 0.8);
+        color: white;
+        padding: 12px 24px;
+        border-radius: 20px;
+        opacity: 0;
+        transition: opacity 300ms ease;
+        pointer-events: none;
+    }
+
+    .swipe-hint.show {
+        opacity: 1;
+    }
+
+    .swipe-hint-text {
+        margin: 0;
+        font-size: 0.9rem;
+        font-weight: 500;
+        animation: swipe-arrows 2s ease-in-out infinite;
+    }
+
+    @keyframes swipe-arrows {
+        0%, 100% {
+            transform: translateX(0);
+        }
+        25% {
+            transform: translateX(-4px);
+        }
+        75% {
+            transform: translateX(4px);
+        }
+    }
+
     .app-header,
     .bottom-banner {
         border-radius: 0;
