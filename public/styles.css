@@ -436,6 +436,20 @@ section h2 {
 .attendance-info {
     position: relative;
     cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+}
+
+@media (max-width: 768px) {
+    .attendance-info {
+        padding: 4px 8px;
+        margin: -4px -8px;
+        border-radius: 6px;
+        transition: background-color 150ms ease;
+    }
+
+    .attendance-info:active {
+        background-color: rgba(0, 0, 0, 0.05);
+    }
 }
 
 .attendance-info span {
@@ -1180,11 +1194,72 @@ section h2 {
 }
 
 /* Responsive design */
+/* Mobile attendee tooltip (JavaScript-based) */
+.attendee-tooltip {
+    position: fixed;
+    z-index: 1003;
+    background: #1f2937;
+    color: white;
+    padding: 16px 40px 16px 16px;
+    border-radius: 12px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+    max-width: calc(100vw - 24px);
+    max-height: 50vh;
+    opacity: 0;
+    transform: translateY(8px);
+    transition: opacity 200ms ease, transform 200ms ease;
+    pointer-events: auto;
+}
+
+.attendee-tooltip.show {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+.attendee-tooltip-content {
+    white-space: pre-wrap;
+    overflow-y: auto;
+    max-height: calc(50vh - 48px);
+    font-size: 0.95rem;
+    line-height: 1.6;
+    -webkit-overflow-scrolling: touch;
+}
+
+.attendee-tooltip-close {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    width: 28px;
+    height: 28px;
+    border: none;
+    background: rgba(255, 255, 255, 0.2);
+    color: white;
+    border-radius: 50%;
+    font-size: 1.2rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 150ms ease;
+}
+
+.attendee-tooltip-close:hover,
+.attendee-tooltip-close:active {
+    background: rgba(255, 255, 255, 0.3);
+}
+
 @media (max-width: 768px) {
     .container {
         padding: 0;
         max-width: none;
         width: 100%;
+    }
+
+    /* Disable CSS pseudo-element tooltip on mobile - use JS tooltip instead */
+    .attendance-info:hover::after,
+    .attendance-info:focus::after,
+    .attendance-info:focus-visible::after {
+        display: none !important;
     }
 
     /* Enable scroll-snap container on mobile */
@@ -1489,15 +1564,6 @@ section h2 {
     #events-list {
         grid-template-columns: 1fr;
         gap: 20px;
-    }
-
-    .attendance-info:hover::after,
-    .attendance-info:focus::after,
-    .attendance-info:focus-visible::after {
-        bottom: auto;
-        top: calc(100% + 12px);
-        left: 0;
-        right: auto;
     }
 
     .modal-content {

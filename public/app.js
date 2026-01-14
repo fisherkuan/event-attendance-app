@@ -624,7 +624,7 @@ function displayEvents() {
                 `;
 
             footerContent = `
-                    <div class="attendance-info" title="${attendanceInfoAttr}">
+                    <div class="attendance-info" title="${attendanceInfoAttr}" tabindex="0" role="button" aria-label="${sanitizedAttendanceText}. Tap to see attendee names.">
                         <span>${sanitizedAttendanceText}</span>
                     </div>
                     ${rsvpButtons}
@@ -783,8 +783,119 @@ function submitRemoveRsvp() {
     });
 }
 
+// Mobile tooltip for attendee list
+let activeAttendeeTooltip = null;
+
+function createAttendeeTooltip(attendanceInfo) {
+    // Remove existing tooltip if any
+    removeAttendeeTooltip();
+
+    const attendeeNames = attendanceInfo.getAttribute('title');
+    if (!attendeeNames || attendeeNames.trim() === '') {
+        return null;
+    }
+
+    // Create tooltip element
+    const tooltip = document.createElement('div');
+    tooltip.className = 'attendee-tooltip';
+    tooltip.setAttribute('role', 'tooltip');
+
+    // Create scrollable content area
+    const content = document.createElement('div');
+    content.className = 'attendee-tooltip-content';
+    content.textContent = attendeeNames;
+    tooltip.appendChild(content);
+
+    // Create close button
+    const closeBtn = document.createElement('button');
+    closeBtn.className = 'attendee-tooltip-close';
+    closeBtn.innerHTML = '&times;';
+    closeBtn.setAttribute('aria-label', 'Close');
+    closeBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        removeAttendeeTooltip();
+    });
+    tooltip.appendChild(closeBtn);
+
+    document.body.appendChild(tooltip);
+
+    // Position tooltip within viewport
+    positionTooltipInViewport(tooltip, attendanceInfo);
+
+    // Show with animation
+    requestAnimationFrame(() => {
+        tooltip.classList.add('show');
+    });
+
+    activeAttendeeTooltip = tooltip;
+    return tooltip;
+}
+
+function positionTooltipInViewport(tooltip, targetElement) {
+    const rect = targetElement.getBoundingClientRect();
+    const tooltipRect = tooltip.getBoundingClientRect();
+    const viewportHeight = window.innerHeight;
+    const viewportWidth = window.innerWidth;
+    const padding = 12;
+
+    // Calculate available space above and below
+    const spaceAbove = rect.top;
+    const spaceBelow = viewportHeight - rect.bottom;
+
+    // Default: position above the element
+    let top = rect.top - tooltipRect.height - padding;
+
+    // If not enough space above, position below
+    if (spaceAbove < tooltipRect.height + padding && spaceBelow > spaceAbove) {
+        top = rect.bottom + padding;
+    }
+
+    // Ensure tooltip doesn't go above viewport
+    if (top < padding) {
+        top = padding;
+    }
+
+    // Ensure tooltip doesn't go below viewport
+    if (top + tooltipRect.height > viewportHeight - padding) {
+        top = viewportHeight - tooltipRect.height - padding;
+    }
+
+    // Horizontal positioning: align with element, but keep within viewport
+    let left = rect.left;
+    if (left + tooltipRect.width > viewportWidth - padding) {
+        left = viewportWidth - tooltipRect.width - padding;
+    }
+    if (left < padding) {
+        left = padding;
+    }
+
+    tooltip.style.top = `${top}px`;
+    tooltip.style.left = `${left}px`;
+}
+
+function removeAttendeeTooltip() {
+    if (activeAttendeeTooltip) {
+        activeAttendeeTooltip.classList.remove('show');
+        setTimeout(() => {
+            if (activeAttendeeTooltip && activeAttendeeTooltip.parentNode) {
+                activeAttendeeTooltip.parentNode.removeChild(activeAttendeeTooltip);
+            }
+            activeAttendeeTooltip = null;
+        }, 200);
+    }
+}
+
 function setupEventListeners() {
+    // Mobile attendee tooltip handler
     eventsList.addEventListener('click', (e) => {
+        const attendanceInfo = e.target.closest('.attendance-info');
+        if (attendanceInfo && TABLET_VIEW_QUERY.matches) {
+            e.preventDefault();
+            e.stopPropagation();
+            createAttendeeTooltip(attendanceInfo);
+            return;
+        }
+
         const btn = e.target.closest('.rsvp-add-btn-small, .rsvp-remove-btn-small');
         if (!btn) return;
 
@@ -807,6 +918,20 @@ function setupEventListeners() {
             openRsvpModal(eventId);
         } else if (action === 'remove') {
             openRemoveRsvpModal(eventId);
+        }
+    });
+
+    // Close tooltip when clicking outside
+    document.addEventListener('click', (e) => {
+        if (activeAttendeeTooltip && !e.target.closest('.attendance-info') && !e.target.closest('.attendee-tooltip')) {
+            removeAttendeeTooltip();
+        }
+    });
+
+    // Close tooltip on escape key
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && activeAttendeeTooltip) {
+            removeAttendeeTooltip();
         }
     });
 
