@@ -1194,7 +1194,7 @@ section h2 {
         height: 100vh;
         overflow-x: auto;
         overflow-y: hidden;
-        scroll-snap-type: x proximity;
+        scroll-snap-type: x mandatory;
         -webkit-overflow-scrolling: touch;
         overscroll-behavior: contain;
     }

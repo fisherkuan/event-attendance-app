@@ -81,104 +81,6 @@ function hideToast(toast) {
     }
 }
 
-// Attendee bottom sheet (mobile)
-function openAttendeeSheet(event) {
-    if (!event) {
-        console.warn('openAttendeeSheet called without event object');
-        return;
-    }
-
-    const sheet = document.getElementById('attendee-sheet');
-    const title = document.getElementById('attendee-sheet-title');
-    const list = document.getElementById('attendee-sheet-list');
-    const empty = document.getElementById('attendee-sheet-empty');
-
-    if (!sheet || !title || !list || !empty) {
-        console.error('Bottom sheet DOM elements not found');
-        return;
-    }
-
-    try {
-        // Set title
-        const attendingCount = event.attendingCount || 0;
-        const limitText = event.attendance_limit ? `/${event.attendance_limit}` : '';
-        title.textContent = `Attendees (${attendingCount}${limitText})`;
-
-        // Populate list
-        list.innerHTML = '';
-        if (event.attendees && event.attendees.length > 0) {
-            event.attendees.forEach(attendee => {
-                const li = document.createElement('li');
-                li.textContent = attendee;
-                list.appendChild(li);
-            });
-            list.classList.remove('hidden');
-            empty.classList.add('hidden');
-        } else {
-            list.classList.add('hidden');
-            empty.classList.remove('hidden');
-        }
-
-        // Show sheet
-        sheet.classList.remove('hidden');
-        requestAnimationFrame(() => {
-            sheet.classList.add('show');
-        });
-
-        // Prevent body scroll
-        document.body.style.overflow = 'hidden';
-
-        // Focus close button for keyboard users
-        const closeBtn = sheet.querySelector('.bottom-sheet-close-btn');
-        if (closeBtn) {
-            setTimeout(() => closeBtn.focus(), 350);
-        }
-
-        // Handle Escape key
-        const handleEscape = (e) => {
-            if (e.key === 'Escape') {
-                closeAttendeeSheet();
-            }
-        };
-        document.addEventListener('keydown', handleEscape);
-
-        // Store handler for cleanup
-        sheet._escapeHandler = handleEscape;
-    } catch (error) {
-        console.error('Error opening attendee sheet:', error);
-        document.body.style.overflow = ''; // Restore scroll
-        sheet.classList.add('hidden');
-    }
-}
-
-function closeAttendeeSheet() {
-    const sheet = document.getElementById('attendee-sheet');
-
-    if (!sheet) {
-        console.warn('Bottom sheet element not found');
-        return;
-    }
-
-    // Remove escape key handler
-    if (sheet._escapeHandler) {
-        document.removeEventListener('keydown', sheet._escapeHandler);
-        sheet._escapeHandler = null;
-    }
-
-    sheet.classList.remove('show');
-    setTimeout(() => {
-        sheet.classList.add('hidden');
-        document.body.style.overflow = '';
-    }, 300);
-}
-
-// Detect if device is touch-enabled
-function isTouchDevice() {
-    return ('ontouchstart' in window) ||
-           (navigator.maxTouchPoints > 0) ||
-           (navigator.msMaxTouchPoints > 0);
-}
-
 function escapeAttribute(value) {
     return escapeHtml(value).replace(/\n/g, '&#10;');
 }
@@ -708,12 +610,6 @@ function displayEvents() {
             }
             const sanitizedAttendanceText = escapeHtml(attendanceText);
 
-            // On touch devices, make attendance info clickable to open bottom sheet
-            const attendanceClick = isTouchDevice()
-                ? `data-sheet-event-id="${sanitizedEventId}"`
-                : '';
-            const attendanceCursor = isTouchDevice() ? 'style="cursor: pointer;"' : '';
-
             const rsvpButtons = isPastEvent
                 ? '<div class="rsvp-disabled">Past Event - RSVP Closed</div>'
                 : `
@@ -728,13 +624,7 @@ function displayEvents() {
                 `;
 
             footerContent = `
-                    <div class="attendance-info"
-                         title="${attendanceInfoAttr}"
-                         ${attendanceClick}
-                         ${attendanceCursor}
-                         tabindex="0"
-                         role="button"
-                         aria-label="View attendee list. ${sanitizedAttendanceText}">
+                    <div class="attendance-info" title="${attendanceInfoAttr}">
                         <span>${sanitizedAttendanceText}</span>
                     </div>
                     ${rsvpButtons}
@@ -821,6 +711,7 @@ function openRemoveRsvpModal(eventId) {
             minute: '2-digit'
         });
 
+        // Populate dropdown with attendees
         const attendeeSelector = document.getElementById('attendee-to-remove');
         attendeeSelector.innerHTML = '';
 
@@ -871,16 +762,13 @@ function submitRemoveRsvp() {
         submitBtn.querySelector('.text').textContent = originalText;
 
         if (result.success) {
-            // Success feedback with animation
-            submitBtn.classList.add('pulse-success');
-            setTimeout(() => submitBtn.classList.remove('pulse-success'), 400);
-
             // Haptic feedback if supported
             if (navigator.vibrate) {
                 navigator.vibrate(50);
             }
 
             closeRemoveRsvpModal();
+            showToast('RSVP removed', 'success');
         } else {
             showToast(result.message || 'Error removing RSVP', 'error');
             submitBtn.classList.add('shake');
@@ -926,48 +814,6 @@ function setupEventListeners() {
     rsvpModal.addEventListener('click', function(e) {
         if (e.target === rsvpModal) {
             closeRsvpModal();
-        }
-    });
-
-    // Attendee sheet
-    const attendeeSheet = document.getElementById('attendee-sheet');
-    if (attendeeSheet) {
-        const backdrop = attendeeSheet.querySelector('.bottom-sheet-backdrop');
-        const closeBtn = attendeeSheet.querySelector('.bottom-sheet-close-btn');
-
-        if (backdrop) {
-            backdrop.addEventListener('click', closeAttendeeSheet);
-        }
-        if (closeBtn) {
-            closeBtn.addEventListener('click', closeAttendeeSheet);
-        }
-    }
-
-    // Attendance info click handler for touch devices
-    document.addEventListener('click', (e) => {
-        const attendanceInfo = e.target.closest('.attendance-info[data-sheet-event-id]');
-        if (attendanceInfo && isTouchDevice()) {
-            e.preventDefault();
-            const eventId = attendanceInfo.getAttribute('data-sheet-event-id');
-            const event = currentEvents.find(ev => ev.id === eventId);
-            if (event) {
-                openAttendeeSheet(event);
-            }
-        }
-    });
-
-    // Keyboard support for attendance info
-    document.addEventListener('keydown', (e) => {
-        if ((e.key === 'Enter' || e.key === ' ') &&
-            e.target.classList.contains('attendance-info') &&
-            e.target.hasAttribute('data-sheet-event-id') &&
-            isTouchDevice()) {
-            e.preventDefault();
-            const eventId = e.target.getAttribute('data-sheet-event-id');
-            const event = currentEvents.find(ev => ev.id === eventId);
-            if (event) {
-                openAttendeeSheet(event);
-            }
         }
     });
 
@@ -1057,16 +903,13 @@ function submitRsvp(action) {
         submitBtn.querySelector('.text').textContent = originalText;
 
         if (result.success) {
-            // Success feedback with animation
-            submitBtn.classList.add('pulse-success');
-            setTimeout(() => submitBtn.classList.remove('pulse-success'), 400);
-
             // Haptic feedback if supported
             if (navigator.vibrate) {
                 navigator.vibrate(50);
             }
 
             closeRsvpModal();
+            showToast('RSVP confirmed!', 'success');
         } else {
             // Error feedback
             showToast(result.message || 'Error submitting RSVP', 'error');
