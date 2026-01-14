@@ -58,7 +58,7 @@ h1, h2, h3, h4, h5, h6 {
 
 .app-header h1 {
     font-size: 2.5rem;
-    font-weight: 700;
+    font-weight: 600;
     margin-bottom: 10px;
 }
 
@@ -84,7 +84,7 @@ h1, h2, h3, h4, h5, h6 {
 
 .app-header p {
     font-size: 1.2rem;
-    font-weight: 300;
+    font-weight: 400;
     opacity: 0.9;
 }
 
@@ -133,7 +133,7 @@ section {
     border-radius: 12px;
     padding: 40px;
     margin-bottom: 40px;
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
 }
 
 section h2 {
@@ -218,7 +218,7 @@ section h2 {
     max-width: 100%;
     height: 600px;
     border-radius: 8px;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
 }
 
 /* Events section */
@@ -304,7 +304,6 @@ section h2 {
 .calendar-action-btn:hover {
     background-color: #667eea;
     color: white;
-    transform: translateY(-2px);
     box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
 }
 
@@ -373,9 +372,10 @@ section h2 {
     background: #fff;
     border: 1px solid #e2e8f0;
     border-radius: 12px;
-    padding: 24px;
+    padding: 28px;
     transition: transform 0.2s, box-shadow 0.2s;
     position: relative;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
 }
 
 .event-card:hover,
@@ -384,8 +384,7 @@ section h2 {
 }
 
 .event-card:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
 }
 
 .event-card h3 {
@@ -410,18 +409,18 @@ section h2 {
     gap: 8px;
     padding: 10px 18px;
     border-radius: 999px;
-    background: linear-gradient(135deg, #4299e1 0%, #3182ce 100%);
+    background: #4299e1;
     color: #fff;
     text-decoration: none;
     font-weight: 600;
     border: none;
-    transition: transform 0.2s, box-shadow 0.2s;
+    transition: opacity 200ms ease, box-shadow 200ms ease;
     margin-left: auto;
 }
 
 .event-link-button:hover {
-    transform: translateY(-1px);
-    box-shadow: 0 4px 12px rgba(66, 153, 225, 0.35);
+    opacity: 0.9;
+    box-shadow: 0 2px 6px rgba(66, 153, 225, 0.2);
     color: #fff;
 }
 
@@ -488,7 +487,7 @@ section h2 {
 }
 
 .rsvp-btn {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: #667eea;
     color: white;
     border: none;
     padding: 12px 20px;
@@ -496,13 +495,13 @@ section h2 {
     font-size: 1rem;
     font-weight: 600;
     cursor: pointer;
-    transition: transform 0.2s, box-shadow 0.2s;
+    transition: opacity 200ms ease, box-shadow 200ms ease;
     width: 100%;
 }
 
 .rsvp-btn:hover {
-    transform: translateY(-1px);
-    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+    opacity: 0.9;
+    box-shadow: 0 2px 6px rgba(102, 126, 234, 0.2);
 }
 
 /* Event RSVP buttons (smaller, inline) */
@@ -536,11 +535,11 @@ section h2 {
 }
 
 .rsvp-add-btn-small:hover {
-    background: linear-gradient(135deg, #48bb78 0%, #38a169 100%);
+    background: #48bb78;
     color: white;
     border-color: transparent;
-    transform: translateY(-1px);
-    box-shadow: 0 4px 12px rgba(72, 187, 120, 0.3);
+    opacity: 0.9;
+    box-shadow: 0 2px 6px rgba(72, 187, 120, 0.2);
 }
 
 .rsvp-remove-btn-small {
@@ -549,17 +548,17 @@ section h2 {
 }
 
 .rsvp-remove-btn-small:hover {
-    background: linear-gradient(135deg, #f56565 0%, #e53e3e 100%);
+    background: #f56565;
     color: white;
     border-color: transparent;
-    transform: translateY(-1px);
-    box-shadow: 0 4px 12px rgba(245, 101, 101, 0.3);
+    opacity: 0.9;
+    box-shadow: 0 2px 6px rgba(245, 101, 101, 0.2);
 }
 
 .rsvp-add-btn-small .icon,
 .rsvp-remove-btn-small .icon {
     font-size: 1.1rem;
-    font-weight: 700;
+    font-weight: 600;
 }
 
 .rsvp-add-btn-small:disabled,
@@ -575,6 +574,36 @@ section h2 {
 .rsvp-remove-btn-small:disabled:hover {
     background: transparent;
     color: #ccd2d9;
+}
+
+@media (max-width: 768px) {
+    .rsvp-add-btn-small:active:not(:disabled),
+    .rsvp-remove-btn-small:active:not(:disabled) {
+        transform: scale(0.95);
+        transition: transform 150ms ease;
+    }
+
+    /* Remove hover effects on mobile */
+    .rsvp-add-btn-small:hover,
+    .rsvp-remove-btn-small:hover {
+        transform: none;
+        box-shadow: none;
+    }
+}
+
+/* Accessibility - Focus states */
+.rsvp-add-btn-small:focus-visible,
+.rsvp-remove-btn-small:focus-visible,
+.bottom-sheet-close-btn:focus-visible,
+.calendar-action-btn:focus-visible {
+    outline: 3px solid #667eea;
+    outline-offset: 2px;
+}
+
+.attendance-info:focus-visible {
+    outline: 2px solid #667eea;
+    outline-offset: 2px;
+    border-radius: 4px;
 }
 
 .rsvp-disabled {
@@ -612,7 +641,7 @@ section h2 {
     background: #fff;
     padding: 30px;
     border-radius: 10px;
-    box-shadow: 0 5px 20px rgba(0,0,0,0.2);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
     width: 90%;
     max-width: 500px;
     position: relative;
@@ -727,31 +756,29 @@ section h2 {
 }
 
 .rsvp-add-btn {
-    background: linear-gradient(135deg, #48bb78 0%, #38a169 100%);
+    background: #48bb78;
     color: white;
 }
 
 .rsvp-add-btn:hover {
-    background: linear-gradient(135deg, #38a169 0%, #2f855a 100%);
-    transform: translateY(-2px);
-    box-shadow: 0 8px 25px rgba(72, 187, 120, 0.3);
+    background: #38a169;
+    box-shadow: 0 2px 6px rgba(72, 187, 120, 0.2);
 }
 
 .rsvp-remove-btn {
-    background: linear-gradient(135deg, #f56565 0%, #e53e3e 100%);
+    background: #f56565;
     color: white;
 }
 
 .rsvp-remove-btn:hover {
-    background: linear-gradient(135deg, #e53e3e 0%, #c53030 100%);
-    transform: translateY(-2px);
-    box-shadow: 0 8px 25px rgba(245, 101, 101, 0.3);
+    background: #e53e3e;
+    box-shadow: 0 2px 6px rgba(245, 101, 101, 0.2);
 }
 
 .rsvp-add-btn .icon,
 .rsvp-remove-btn .icon {
     font-size: 1.5rem;
-    font-weight: 700;
+    font-weight: 600;
 }
 
 /* Form styles */
@@ -819,7 +846,6 @@ section h2 {
 
 .form-actions button[type="submit"]:hover {
     background: #5a67d8;
-    transform: translateY(-1px);
 }
 
 .form-actions button[type="button"] {
@@ -865,7 +891,7 @@ section h2 {
 .stat .count {
     display: block;
     font-size: 2rem;
-    font-weight: 700;
+    font-weight: 600;
     color: #667eea;
 }
 
@@ -942,6 +968,217 @@ section h2 {
     display: none; /* Hidden on desktop */
 }
 
+/* Toast Notifications */
+.toast {
+    position: fixed;
+    top: 20px;
+    left: 50%;
+    transform: translateX(-50%) translateY(-100px);
+    background: #1f2937;
+    color: white;
+    padding: 12px 24px;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    z-index: 1001;
+    opacity: 0;
+    transition: transform 300ms ease-out, opacity 300ms ease-out;
+    pointer-events: none;
+    max-width: 90%;
+    text-align: center;
+}
+
+.toast.show {
+    transform: translateX(-50%) translateY(0);
+    opacity: 1;
+    pointer-events: auto;
+}
+
+.toast.error {
+    background: #ef4444;
+}
+
+.toast.success {
+    background: #10b981;
+}
+
+.toast.info {
+    background: #3b82f6;
+}
+
+/* Button feedback animations */
+@keyframes pulse-green {
+    0% {
+        box-shadow: 0 0 0 0 rgba(72, 187, 120, 0.7);
+    }
+    50% {
+        box-shadow: 0 0 0 10px rgba(72, 187, 120, 0);
+    }
+    100% {
+        box-shadow: 0 0 0 0 rgba(72, 187, 120, 0);
+    }
+}
+
+@keyframes pulse-red {
+    0% {
+        box-shadow: 0 0 0 0 rgba(245, 101, 101, 0.7);
+    }
+    50% {
+        box-shadow: 0 0 0 10px rgba(245, 101, 101, 0);
+    }
+    100% {
+        box-shadow: 0 0 0 0 rgba(245, 101, 101, 0);
+    }
+}
+
+.rsvp-add-btn-small.pulse-success,
+.rsvp-add-btn.pulse-success {
+    animation: pulse-green 400ms ease-out;
+}
+
+.rsvp-remove-btn-small.pulse-success,
+.rsvp-remove-btn.pulse-success {
+    animation: pulse-red 400ms ease-out;
+}
+
+@keyframes shake {
+    0%, 100% {
+        transform: translateX(0);
+    }
+    10%, 30%, 50%, 70%, 90% {
+        transform: translateX(-4px);
+    }
+    20%, 40%, 60%, 80% {
+        transform: translateX(4px);
+    }
+}
+
+.shake {
+    animation: shake 300ms ease-in-out;
+}
+
+/* Attendee Bottom Sheet (Mobile) */
+.bottom-sheet {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 1002;
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 300ms ease-out;
+}
+
+.bottom-sheet.show {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+.bottom-sheet-backdrop {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.3);
+    backdrop-filter: blur(4px);
+}
+
+.bottom-sheet-content {
+    position: relative;
+    background: white;
+    border-radius: 16px 16px 0 0;
+    width: 100%;
+    max-height: 60vh;
+    display: flex;
+    flex-direction: column;
+    transform: translateY(100%);
+    transition: transform 300ms ease-out;
+    box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.12);
+}
+
+.bottom-sheet.show .bottom-sheet-content {
+    transform: translateY(0);
+}
+
+.bottom-sheet-header {
+    padding: 20px 24px 16px;
+    border-bottom: 1px solid #e2e8f0;
+    flex-shrink: 0;
+}
+
+.bottom-sheet-header h3 {
+    margin: 0;
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: #1a202c;
+}
+
+.bottom-sheet-body {
+    flex: 1;
+    overflow-y: auto;
+    padding: 0;
+    -webkit-overflow-scrolling: touch;
+}
+
+.attendee-sheet-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.attendee-sheet-list li {
+    padding: 16px 24px;
+    border-bottom: 1px solid #f1f5f9;
+    color: #4a5568;
+    font-size: 1rem;
+}
+
+.attendee-sheet-list li:last-child {
+    border-bottom: none;
+}
+
+.attendee-sheet-empty {
+    padding: 40px 24px;
+    text-align: center;
+    color: #a0aec0;
+    font-style: italic;
+}
+
+.bottom-sheet-footer {
+    padding: 16px 24px;
+    border-top: 1px solid #e2e8f0;
+    flex-shrink: 0;
+}
+
+.bottom-sheet-close-btn {
+    width: 100%;
+    padding: 14px;
+    background: #667eea;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 200ms ease;
+}
+
+.bottom-sheet-close-btn:active {
+    background: #5a67d8;
+    transform: scale(0.98);
+}
+
+/* Hide bottom sheet on desktop */
+@media (min-width: 769px) {
+    .bottom-sheet {
+        display: none;
+    }
+}
+
 /* Responsive design */
 @media (max-width: 768px) {
     .container {
@@ -957,7 +1194,7 @@ section h2 {
         height: 100vh;
         overflow-x: auto;
         overflow-y: hidden;
-        scroll-snap-type: x mandatory;
+        scroll-snap-type: x proximity;
         -webkit-overflow-scrolling: touch;
         overscroll-behavior: contain;
     }
@@ -1160,31 +1397,80 @@ section h2 {
     .page-indicators {
         display: flex;
         position: fixed;
-        bottom: 20px;
+        bottom: 30px;
         left: 50%;
         transform: translateX(-50%);
         gap: 12px;
         z-index: 100;
         padding: 10px 16px;
-        background: rgba(0, 0, 0, 0.3);
+        background: rgba(0, 0, 0, 0.4);
         backdrop-filter: blur(10px);
         border-radius: 20px;
     }
 
     .page-dot {
-        width: 8px;
-        height: 8px;
+        width: 10px;
+        height: 10px;
         border-radius: 50%;
         background: rgba(255, 255, 255, 0.4);
         cursor: pointer;
-        transition: all 0.3s ease;
+        transition: all 300ms ease;
     }
 
     .page-dot.active {
-        width: 10px;
-        height: 10px;
+        width: 12px;
+        height: 12px;
         background: rgba(255, 255, 255, 0.95);
         box-shadow: 0 0 8px rgba(255, 255, 255, 0.5);
+        animation: pulse-dot 2s ease-in-out infinite;
+    }
+
+    @keyframes pulse-dot {
+        0%, 100% {
+            opacity: 1;
+        }
+        50% {
+            opacity: 0.8;
+        }
+    }
+
+    /* Swipe hint for first-time users */
+    .swipe-hint {
+        position: fixed;
+        bottom: 90px;
+        left: 50%;
+        transform: translateX(-50%);
+        z-index: 99;
+        background: rgba(0, 0, 0, 0.8);
+        color: white;
+        padding: 12px 24px;
+        border-radius: 20px;
+        opacity: 0;
+        transition: opacity 300ms ease;
+        pointer-events: none;
+    }
+
+    .swipe-hint.show {
+        opacity: 1;
+    }
+
+    .swipe-hint-text {
+        margin: 0;
+        font-size: 0.9rem;
+        font-weight: 500;
+        animation: swipe-arrows 2s ease-in-out infinite;
+    }
+
+    @keyframes swipe-arrows {
+        0%, 100% {
+            transform: translateX(0);
+        }
+        25% {
+            transform: translateX(-4px);
+        }
+        75% {
+            transform: translateX(4px);
+        }
     }
 
     .app-header,
@@ -1202,7 +1488,7 @@ section h2 {
     
     #events-list {
         grid-template-columns: 1fr;
-        gap: 16px;
+        gap: 20px;
     }
 
     .attendance-info:hover::after,
@@ -1232,9 +1518,17 @@ section h2 {
         gap: 12px;
     }
     
+    .rsvp-add-btn-small,
+    .rsvp-remove-btn-small {
+        flex: 0 0 44px;
+        width: 44px;
+        height: 44px;
+        font-size: 1.3rem;
+    }
+
     .event-rsvp-buttons {
         flex-direction: row;
-        gap: 8px;
+        gap: 12px;
     }
 
     .app-header h1 {
@@ -1374,7 +1668,6 @@ section h2 {
 }
 
 .instructions-btn:hover {
-  transform: translateY(-2px);
   box-shadow: 0 6px 12px rgba(0,0,0,0.3);
 }
 
@@ -1486,7 +1779,6 @@ section h2 {
 
 .support-btn:hover {
     background: rgba(255, 255, 255, 0.2);
-    transform: translateY(-1px);
 }
 .pwa-banner button:active,
 .install-banner button:active,
@@ -1762,7 +2054,6 @@ section h2 {
 }
 
 .donation-entry:hover {
-    transform: translateY(-1px);
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 
@@ -1905,7 +2196,6 @@ section h2 {
 }
 
 .btn-primary:hover {
-    transform: translateY(-1px);
     box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
 }
 
@@ -1971,7 +2261,6 @@ section h2 {
 
 .admin-link-btn:hover {
     background: #e5e7eb;
-    transform: translateY(-1px);
 }
 
 /* Responsive styles for donations */

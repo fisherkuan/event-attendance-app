@@ -10,6 +10,16 @@ const WebSocket = require('ws');
 // Load environment variables
 require('dotenv').config();
 
+// Validate required environment variables at startup
+const requiredEnvVars = ['DATABASE_URL', 'STRIPE_SECRET_KEY', 'STRIPE_PUBLISHABLE_KEY', 'ADMIN_API_KEY'];
+const missingVars = requiredEnvVars.filter(varName => !process.env[varName]);
+
+if (missingVars.length > 0) {
+    console.error(`❌ Missing required environment variables: ${missingVars.join(', ')}`);
+    console.error('Please check your .env file and ensure all required variables are set.');
+    process.exit(1);
+}
+
 const app = express();
 const PORT = process.env.PORT || 3000;
 
@@ -23,6 +33,13 @@ app.use(express.static(path.join(__dirname, '../public')));
 
 const isProduction = process.env.NODE_ENV === 'production';
 
+// Calendar cache to reduce external API calls
+let calendarCache = {
+    events: [],
+    lastFetch: 0
+};
+const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+
 // Database connection
 const pool = new Pool({
     connectionString: process.env.DATABASE_URL,
@@ -30,6 +47,38 @@ const pool = new Pool({
 });
 
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
+
+// Admin authentication middleware
+function requireAdminKey(req, res, next) {
+    const adminKey = process.env.ADMIN_API_KEY;
+
+    if (!adminKey) {
+        console.error('ADMIN_API_KEY not configured in environment variables');
+        return res.status(500).json({ success: false, message: 'Server configuration error' });
+    }
+
+    const providedKey = req.headers['x-admin-key'] || req.body.adminKey;
+
+    if (providedKey !== adminKey) {
+        return res.status(401).json({ success: false, message: 'Unauthorized: Invalid admin key' });
+    }
+
+    next();
+}
+
+// Input validation helpers
+function validateAttendeeName(name) {
+    if (typeof name !== 'string') return null;
+    const trimmed = name.trim();
+
+    // Check length constraints
+    if (trimmed.length === 0 || trimmed.length > 100) return null;
+
+    // Block potential XSS patterns
+    if (/<script|javascript:|onerror=|onclick=|onload=/i.test(trimmed)) return null;
+
+    return trimmed;
+}
 
 // Load configuration
 let appConfig = {};
@@ -221,12 +270,33 @@ async function initializeDatabase() {
             // Ignore errors if column doesn't exist or can't be dropped
             console.log('Note: created_by column removal attempted (may not exist):', error.message);
         }
-        console.log('Database schema initialized.');
+
+        // Create indexes for performance
+        await client.query('CREATE INDEX IF NOT EXISTS idx_rsvps_event_id ON rsvps(event_id)');
+        await client.query('CREATE INDEX IF NOT EXISTS idx_rsvps_attendance ON rsvps(attendance)');
+        await client.query('CREATE INDEX IF NOT EXISTS idx_events_date ON events(date)');
+        await client.query('CREATE INDEX IF NOT EXISTS idx_events_source ON events(source)');
+        await client.query('CREATE INDEX IF NOT EXISTS idx_donations_entry_date ON donations(COALESCE(entry_date, created_at))');
+
+        console.log('Database schema initialized with indexes.');
     } catch (error) {
         console.error('Error initializing database schema:', error);
     } finally {
         client.release();
     }
+}
+
+// Function to fetch events from Google Calendar with caching
+async function getCachedCalendarEvents() {
+    const now = Date.now();
+    if (now - calendarCache.lastFetch > CACHE_TTL) {
+        calendarCache.events = await fetchCalendarEvents();
+        calendarCache.lastFetch = now;
+        console.log('Calendar events fetched from Google Calendar');
+    } else {
+        console.log('Using cached calendar events');
+    }
+    return calendarCache.events;
 }
 
 // Function to fetch events from Google Calendar
@@ -388,7 +458,7 @@ app.get('/api/events', async (req, res) => {
         const timeRange = req.query.timeRange || appConfig.events.defaultTimeRange;
 
         if (appConfig.events.autoFetch) {
-            const calendarEvents = await fetchCalendarEvents();
+            const calendarEvents = await getCachedCalendarEvents();
             const calendarEventIds = new Set(calendarEvents.map(e => e.id));
 
             await client.query('BEGIN');
@@ -558,6 +628,15 @@ app.post('/api/rsvp', async (req, res) => {
         const event = eventResult.rows[0];
 
         if (action === 'add') {
+            // Validate attendee name
+            const validatedName = validateAttendeeName(attendeeName);
+            if (!validatedName) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'Invalid attendee name. Name must be 1-100 characters and contain no scripts.'
+                });
+            }
+
             if (event.attendance_limit !== null) {
                 const rsvpsResult = await client.query('SELECT COUNT(*) FROM rsvps WHERE event_id = $1 AND attendance = $2', [eventId, 'yes']);
                 const attendingCount = parseInt(rsvpsResult.rows[0].count, 10);
@@ -566,14 +645,11 @@ app.post('/api/rsvp', async (req, res) => {
                 }
             }
 
-            if (!attendeeName) {
-                return res.status(400).json({ success: false, message: 'Attendee name is required' });
-            }
             const newRsvp = {
                 id: uuidv4(),
                 eventId,
                 attendance: 'yes',
-                attendeeName,
+                attendeeName: validatedName,
                 timestamp: new Date()
             };
             await client.query(
@@ -581,12 +657,17 @@ app.post('/api/rsvp', async (req, res) => {
                 [newRsvp.id, newRsvp.eventId, newRsvp.attendeeName, newRsvp.attendance, newRsvp.timestamp]
             );
         } else if (action === 'remove') {
-            if (!attendeeName) {
-                return res.status(400).json({ success: false, message: 'Attendee name is required to remove an RSVP' });
+            // Validate attendee name
+            const validatedName = validateAttendeeName(attendeeName);
+            if (!validatedName) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'Invalid attendee name'
+                });
             }
             await client.query(
                 'DELETE FROM rsvps WHERE id IN (SELECT id FROM rsvps WHERE event_id = $1 AND attendee_name = $2 AND attendance = $3 LIMIT 1)',
-                [eventId, attendeeName, 'yes']
+                [eventId, validatedName, 'yes']
             );
         }
 
@@ -613,73 +694,49 @@ app.post('/api/rsvp', async (req, res) => {
     }
 });
 
-// Add new event
-app.post('/api/events', async (req, res) => {
-    const client = await pool.connect();
-    try {
-        const { title, date, description, location, attendanceLimit } = req.body;
+// POST /api/events endpoint removed - events are managed via Google Calendar sync
 
-        if (!title || !date) {
-            return res.status(400).json({ success: false, message: 'Title and date are required' });
-        }
-
-        const newEvent = {
-            id: uuidv4(),
-            title,
-            date,
-            description: description || '',
-            location: location || '',
-            attendanceLimit: attendanceLimit || null
-        };
-
-        await client.query(
-            'INSERT INTO events (id, title, date, description, location, attendance_limit) VALUES ($1, $2, $3, $4, $5, $6)',
-            [newEvent.id, newEvent.title, newEvent.date, newEvent.description, newEvent.location, newEvent.attendanceLimit]
-        );
-
-        res.json({ success: true, message: 'Event created successfully', event: newEvent });
-    } catch (error) {
-        console.error('Error creating event:', error);
-        res.status(500).json({ success: false, message: 'Internal server error' });
-    } finally {
-        client.release();
-    }
-});
-
-// Update an event
+// Update event attendance limit (ONLY - other fields sync from Google Calendar)
 app.put('/api/events/:id', async (req, res) => {
     const client = await pool.connect();
     try {
         const { id } = req.params;
-        const { title, date, description, location, attendanceLimit } = req.body;
+        const { attendanceLimit } = req.body;
 
-        const fields = { title, date, description, location, attendance_limit: attendanceLimit };
-        const updates = [];
-        const values = [];
-        let i = 1;
-
-        for (const [key, value] of Object.entries(fields)) {
-            if (value !== undefined) {
-                updates.push(`${key} = $${i++}`);
-                values.push(value);
-            }
+        // ONLY allow attendance_limit updates - reject attempts to modify other fields
+        const bodyKeys = Object.keys(req.body);
+        if (bodyKeys.length !== 1 || attendanceLimit === undefined) {
+            return res.status(400).json({
+                success: false,
+                message: 'Only attendanceLimit can be updated. Other event fields are synced from Google Calendar.'
+            });
         }
 
-        if (updates.length === 0) {
-            return res.status(400).json({ success: false, message: 'No fields to update' });
+        // Validate attendance limit
+        const limit = attendanceLimit === null || attendanceLimit === '' ? null : parseInt(attendanceLimit, 10);
+        if (limit !== null && (isNaN(limit) || limit < 0)) {
+            return res.status(400).json({
+                success: false,
+                message: 'Attendance limit must be a positive number or null'
+            });
         }
-
-        values.push(id);
 
         await client.query(
-            `UPDATE events SET ${updates.join(', ')} WHERE id = $${i}`,
-            values
+            'UPDATE events SET attendance_limit = $1 WHERE id = $2',
+            [limit, id]
         );
 
         const updatedEventResult = await client.query('SELECT * FROM events WHERE id = $1', [id]);
         const updatedEvent = updatedEventResult.rows[0];
 
-        const eventRsvpsResult = await client.query('SELECT attendee_name FROM rsvps WHERE event_id = $1 AND attendance = $2', [id, 'yes']);
+        if (!updatedEvent) {
+            return res.status(404).json({ success: false, message: 'Event not found' });
+        }
+
+        const eventRsvpsResult = await client.query(
+            'SELECT attendee_name FROM rsvps WHERE event_id = $1 AND attendance = $2',
+            [id, 'yes']
+        );
         const attendees = eventRsvpsResult.rows.map(rsvp => rsvp.attendee_name);
         const attendingCount = attendees.length;
 
@@ -692,7 +749,7 @@ app.put('/api/events/:id', async (req, res) => {
             }
         });
 
-        res.json({ success: true, message: 'Event updated successfully', event: updatedEvent });
+        res.json({ success: true, message: 'Attendance limit updated successfully', event: updatedEvent });
     } catch (error) {
         console.error('Error updating event:', error);
         res.status(500).json({ success: false, message: 'Internal server error' });
@@ -701,20 +758,7 @@ app.put('/api/events/:id', async (req, res) => {
     }
 });
 
-// Delete an event
-app.delete('/api/events/:id', async (req, res) => {
-    const client = await pool.connect();
-    try {
-        const { id } = req.params;
-        await client.query('DELETE FROM events WHERE id = $1', [id]);
-        res.json({ success: true, message: 'Event deleted successfully' });
-    } catch (error) {
-        console.error('Error deleting event:', error);
-        res.status(500).json({ success: false, message: 'Internal server error' });
-    } finally {
-        client.release();
-    }
-});
+// DELETE /api/events/:id endpoint removed - events are managed via Google Calendar sync
 
 // Donations API Routes
 
@@ -759,8 +803,8 @@ app.get('/api/donations', async (req, res) => {
     }
 });
 
-// Create a new donation (admin only - can add auth later)
-app.post('/api/donations', async (req, res) => {
+// Create a new donation (admin only - requires API key)
+app.post('/api/donations', requireAdminKey, async (req, res) => {
     const client = await pool.connect();
     try {
         const { amount, description, donator, entry_date } = req.body;
