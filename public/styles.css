@@ -58,7 +58,7 @@ h1, h2, h3, h4, h5, h6 {
 
 .app-header h1 {
     font-size: 2.5rem;
-    font-weight: 700;
+    font-weight: 600;
     margin-bottom: 10px;
 }
 
@@ -84,7 +84,7 @@ h1, h2, h3, h4, h5, h6 {
 
 .app-header p {
     font-size: 1.2rem;
-    font-weight: 300;
+    font-weight: 400;
     opacity: 0.9;
 }
 
@@ -372,7 +372,7 @@ section h2 {
     background: #fff;
     border: 1px solid #e2e8f0;
     border-radius: 12px;
-    padding: 24px;
+    padding: 28px;
     transition: transform 0.2s, box-shadow 0.2s;
     position: relative;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
@@ -558,7 +558,7 @@ section h2 {
 .rsvp-add-btn-small .icon,
 .rsvp-remove-btn-small .icon {
     font-size: 1.1rem;
-    font-weight: 700;
+    font-weight: 600;
 }
 
 .rsvp-add-btn-small:disabled,
@@ -763,7 +763,7 @@ section h2 {
 .rsvp-add-btn .icon,
 .rsvp-remove-btn .icon {
     font-size: 1.5rem;
-    font-weight: 700;
+    font-weight: 600;
 }
 
 /* Form styles */
@@ -876,7 +876,7 @@ section h2 {
 .stat .count {
     display: block;
     font-size: 2rem;
-    font-weight: 700;
+    font-weight: 600;
     color: #667eea;
 }
 
@@ -1424,7 +1424,7 @@ section h2 {
     
     #events-list {
         grid-template-columns: 1fr;
-        gap: 16px;
+        gap: 20px;
     }
 
     .attendance-info:hover::after,
