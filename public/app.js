@@ -483,14 +483,39 @@ function setupCalendar() {
             }
 
             calendarContainer.innerHTML = `
-                <iframe src="${finalCalendarUrl}" 
-                        style="border: 0" 
-                        width="100%" 
-                        height="600" 
-                        frameborder="0" 
-                        scrolling="no">
-                </iframe>
+                <div id="calendar-lazy-loader" style="min-height: 600px; display: flex; align-items: center; justify-content: center; color: #718096;">
+                    <p>Loading calendar...</p>
+                </div>
             `;
+
+            // Lazy load calendar iframe
+            const lazyLoadCalendar = () => {
+                const loader = document.getElementById('calendar-lazy-loader');
+                if (!loader) return;
+
+                const observer = new IntersectionObserver((entries) => {
+                    entries.forEach(entry => {
+                        if (entry.isIntersecting) {
+                            calendarContainer.innerHTML = `
+                                <iframe src="${finalCalendarUrl}"
+                                        style="border: 0"
+                                        width="100%"
+                                        height="600"
+                                        frameborder="0"
+                                        scrolling="no"
+                                        loading="lazy">
+                                </iframe>
+                            `;
+                            observer.disconnect();
+                        }
+                    });
+                }, { rootMargin: '200px' });
+
+                observer.observe(loader);
+            };
+
+            // Start observing
+            lazyLoadCalendar();
         };
 
         updateCalendarView();
