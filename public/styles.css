@@ -375,6 +375,7 @@ section h2 {
     padding: 24px;
     transition: transform 0.2s, box-shadow 0.2s;
     position: relative;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
 }
 
 .event-card:hover,
