@@ -127,6 +127,23 @@ function openAttendeeSheet(event) {
 
         // Prevent body scroll
         document.body.style.overflow = 'hidden';
+
+        // Focus close button for keyboard users
+        const closeBtn = sheet.querySelector('.bottom-sheet-close-btn');
+        if (closeBtn) {
+            setTimeout(() => closeBtn.focus(), 350);
+        }
+
+        // Handle Escape key
+        const handleEscape = (e) => {
+            if (e.key === 'Escape') {
+                closeAttendeeSheet();
+            }
+        };
+        document.addEventListener('keydown', handleEscape);
+
+        // Store handler for cleanup
+        sheet._escapeHandler = handleEscape;
     } catch (error) {
         console.error('Error opening attendee sheet:', error);
         document.body.style.overflow = ''; // Restore scroll
@@ -140,6 +157,12 @@ function closeAttendeeSheet() {
     if (!sheet) {
         console.warn('Bottom sheet element not found');
         return;
+    }
+
+    // Remove escape key handler
+    if (sheet._escapeHandler) {
+        document.removeEventListener('keydown', sheet._escapeHandler);
+        sheet._escapeHandler = null;
     }
 
     sheet.classList.remove('show');
@@ -705,7 +728,13 @@ function displayEvents() {
                 `;
 
             footerContent = `
-                    <div class="attendance-info" title="${attendanceInfoAttr}" ${attendanceClick} ${attendanceCursor} tabindex="0" role="button" aria-label="View attendee list">
+                    <div class="attendance-info"
+                         title="${attendanceInfoAttr}"
+                         ${attendanceClick}
+                         ${attendanceCursor}
+                         tabindex="0"
+                         role="button"
+                         aria-label="View attendee list. ${sanitizedAttendanceText}">
                         <span>${sanitizedAttendanceText}</span>
                     </div>
                     ${rsvpButtons}

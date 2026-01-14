@@ -591,6 +591,21 @@ section h2 {
     }
 }
 
+/* Accessibility - Focus states */
+.rsvp-add-btn-small:focus-visible,
+.rsvp-remove-btn-small:focus-visible,
+.bottom-sheet-close-btn:focus-visible,
+.calendar-action-btn:focus-visible {
+    outline: 3px solid #667eea;
+    outline-offset: 2px;
+}
+
+.attendance-info:focus-visible {
+    outline: 2px solid #667eea;
+    outline-offset: 2px;
+    border-radius: 4px;
+}
+
 .rsvp-disabled {
     background: #f7fafc;
     color: #a0aec0;
