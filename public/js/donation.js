@@ -25,10 +25,32 @@ function debounce(func, wait, immediate) {
 
 document.addEventListener('DOMContentLoaded', () => {
     loadDonations();
+    loadDonationProgress();
     setupDonateButton();
-    setupScrollSnapIndicators();
     setupRefreshButton();
 });
+
+async function loadDonationProgress() {
+    try {
+        const res = await fetch(`${API_BASE_URL}/api/donation-progress`);
+        if (!res.ok) return;
+        const { current, goal } = await res.json();
+        if (!goal || goal <= 0) return;
+        const wrap = document.getElementById('donation-progress-wrap');
+        const fill = document.getElementById('donation-progress-fill');
+        const cur = document.getElementById('donation-progress-current');
+        const goalEl = document.getElementById('donation-progress-goal');
+        if (!wrap || !fill || !cur || !goalEl) return;
+        const pct = Math.max(0, Math.min(100, Math.round((current / goal) * 100)));
+        fill.style.width = `${pct}%`;
+        const fmt = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 });
+        cur.textContent = `${fmt.format(current)} raised`;
+        goalEl.textContent = `Goal · ${fmt.format(goal)}`;
+        wrap.hidden = false;
+    } catch (err) {
+        console.error('Error loading donation progress:', err);
+    }
+}
 
 function setupRefreshButton() {
     const refreshBtn = document.getElementById('refresh-donations-btn');
@@ -85,31 +107,29 @@ function displayDonations(donations) {
     }
     
     const donationsHtml = donations.map(donation => {
-        // Use entry_date if available, otherwise fall back to created_at
         const dateToUse = donation.entry_date || donation.created_at;
         const date = new Date(dateToUse);
         const formattedDate = date.toLocaleDateString('en-US', {
-            year: 'numeric',
-            month: 'short',
-            day: 'numeric',
+            year: 'numeric', month: 'short', day: 'numeric',
         });
-        
+
         const amount = new Intl.NumberFormat('en-US', {
-            style: 'currency',
-            currency: 'EUR',
-            minimumFractionDigits: 2
+            style: 'currency', currency: 'EUR', minimumFractionDigits: 2
         }).format(donation.amount);
-        
+
         const amountClass = donation.amount >= 0 ? 'positive' : 'negative';
-        
+        const signedAmount = donation.amount > 0 ? `+${amount}` : amount;
+        const donatorHtml = donation.donator ? escapeHtml(donation.donator) : 'Anonymous';
+        const descHtml = donation.description ? escapeHtml(donation.description) : '';
+
         return `
             <div class="donation-entry">
-                <div class="donation-entry-header">
-                    <span class="donation-amount ${amountClass}">${amount}</span>
+                <div class="donation-date date">${formattedDate}</div>
+                <div>
+                    <div class="donation-donator donator">${donatorHtml}</div>
+                    ${descHtml ? `<div class="donation-description desc">${descHtml}</div>` : ''}
                 </div>
-                ${donation.donator ? `<div class="donation-donator"><strong>Donator:</strong> ${escapeHtml(donation.donator)}</div>` : ''}
-                ${donation.description ? `<div class="donation-description">${escapeHtml(donation.description)}</div>` : ''}
-                <div class="donation-date">${formattedDate}</div>
+                <div class="donation-amount ${amountClass}">${signedAmount}</div>
             </div>
         `;
     }).join('');

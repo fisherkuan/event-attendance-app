@@ -3,24 +3,34 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>FAQ | Leuven Taiwanese Events</title>
+    <title>FAQ — Leuven Taiwanese Events</title>
     <meta name="description" content="Frequently asked questions about the Leuven Taiwanese Events web app.">
     <link rel="stylesheet" href="styles.css">
-    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans:wght@300;400;600;700&family=Press+Start+2P&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Fraunces:opsz,wght@9..144,500;9..144,600&display=swap" rel="stylesheet">
     <link rel="icon" href="/icons/favicon.ico" type="image/x-icon">
 </head>
-<body class="faq-page">
-    <main class="faq-main">
-        <div class="faq-wrapper">
-            <a class="faq-back-link" href="index.html">&larr; Back to events</a>
-            <section class="faq-content-shell" aria-live="polite" aria-busy="true">
-                <div id="faq-content" class="faq-content">
-                    <p class="faq-loading">Loading FAQ...</p>
-                </div>
-            </section>
-        </div>
-    </main>
+<body>
+<div class="container container-narrow">
+    <a class="faq-back" href="index.html">← Back to events</a>
 
-    <script src="js/faq.js"></script>
+    <section class="faq-hero">
+        <div class="eyebrow">Frequently asked</div>
+        <h1 class="display">Questions, answered.</h1>
+        <p>Everything you might wonder about RSVPs, calendars, donations, and how this little app is run.</p>
+    </section>
+
+    <section class="faq-list" id="faq-content" aria-live="polite" aria-busy="true">
+        <p class="loading">Loading FAQ...</p>
+    </section>
+
+    <footer class="bottom-banner">
+        <div class="banner-content">
+            <p class="support-header support-line">Built by Fisher Kuan — a small labour of love for Leuven's Taiwanese community.</p>
+            <p class="copyright">&copy; Built by Fisher Kuan</p>
+        </div>
+    </footer>
+</div>
+
+<script src="js/faq.js"></script>
 </body>
 </html>

@@ -3,37 +3,48 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin</title>
+    <title>Admin — Events</title>
     <link rel="stylesheet" href="/styles.css">
-    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans:wght@300;400;600;700&family=Press+Start+2P&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Fraunces:opsz,wght@9..144,500;9..144,600&display=swap" rel="stylesheet">
     <link rel="icon" href="/icons/favicon.ico" type="image/x-icon">
 </head>
 <body>
-    <div class="container">
-        <header class="app-header">
-            <h1>🦧 Admin 🦧</h1>
-            <p>You shall not pass ⛔️</p>
-        </header>
-
-        <main>
-            <section class="events-list-section">
-                <h2><span class="section-emoji" aria-hidden="true">🗂️</span> Future Events</h2>
-                <div id="admin-events-list">
-                    <!-- Events will be populated dynamically -->
-                </div>
-            </section>
-        </main>
-
-        <div class="bottom-banner">
-            <div class="container">
-                <div class="support-buttons">
-                    <a href="/" class="support-btn">Back to Home</a>
-                </div>
-                <p class="copyright">&copy; Built by Fisher Kuan</p>
-            </div>
+<div class="container container-narrow">
+    <header class="admin-header">
+        <div>
+            <div class="eyebrow">Admin</div>
+            <h1>Event &amp; donation management</h1>
+            <p>Set attendance limits for upcoming events.</p>
         </div>
-    </div>
+        <nav class="tabs" aria-label="Admin sections">
+            <a href="/admin" class="active">Events</a>
+            <a href="/admin-donations">Donations</a>
+            <a href="/">Back to site</a>
+        </nav>
+    </header>
 
-    <script src="/admin.js"></script>
+    <main>
+        <section class="events-section">
+            <div class="section-header">
+                <div>
+                    <h2 class="section-title">Future events</h2>
+                    <div class="section-meta">Set attendance limits</div>
+                </div>
+            </div>
+            <div id="admin-events-list">
+                <div class="loading">Loading events...</div>
+            </div>
+        </section>
+    </main>
+
+    <footer class="bottom-banner">
+        <div class="banner-content">
+            <p class="support-header support-line">Built by Fisher Kuan — a small labour of love for Leuven's Taiwanese community.</p>
+            <p class="copyright">&copy; Built by Fisher Kuan</p>
+        </div>
+    </footer>
+</div>
+
+<script src="/admin.js"></script>
 </body>
 </html>

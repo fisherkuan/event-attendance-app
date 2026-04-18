@@ -21,14 +21,15 @@ document.addEventListener('DOMContentLoaded', () => {
     const form = document.getElementById('donation-form');
     form.addEventListener('submit', handleSubmit);
 
-    // Add a button to clear stored key (optional - for security)
+    // Small "clear admin key" action below the form message
+    const msg = document.getElementById('form-message');
     const clearKeyBtn = document.createElement('button');
     clearKeyBtn.type = 'button';
-    clearKeyBtn.textContent = 'Clear Stored Admin Key';
-    clearKeyBtn.className = 'btn-secondary';
-    clearKeyBtn.style.marginTop = '10px';
+    clearKeyBtn.textContent = 'Clear stored admin key';
+    clearKeyBtn.className = 'btn ghost sm';
+    clearKeyBtn.style.marginTop = 'var(--s-3)';
     clearKeyBtn.onclick = clearStoredKey;
-    form.appendChild(clearKeyBtn);
+    if (msg && msg.parentElement) msg.parentElement.appendChild(clearKeyBtn);
 });
 
 function handleSubmit(e) {
