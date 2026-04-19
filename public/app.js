@@ -392,20 +392,46 @@ function setupFilterPills() {
 
 // ---------- Mobile actions ----------
 function setupMobileActions() {
-    // Subscribe dropdown toggle (mobile)
-    const subscribeBtn = document.getElementById('mobile-subscribe-btn');
-    const subscribeDropdown = document.getElementById('mobile-subscribe-dropdown');
-    if (subscribeBtn && subscribeDropdown) {
-        subscribeBtn.addEventListener('click', (e) => {
-            e.stopPropagation();
-            subscribeDropdown.classList.toggle('open');
-        });
-        document.addEventListener('click', (e) => {
-            if (!subscribeDropdown.contains(e.target)) {
-                subscribeDropdown.classList.remove('open');
-            }
-        });
-    }
+    const toggle = document.getElementById('menu-toggle');
+    const panel = document.getElementById('menu-panel');
+    const backdrop = document.getElementById('menu-backdrop');
+    const closeBtn = document.getElementById('menu-close');
+    if (!toggle || !panel || !backdrop) return;
+
+    const subscribeDetails = panel.querySelector('.menu-subscribe');
+
+    const openMenu = () => {
+        panel.classList.add('open');
+        backdrop.hidden = false;
+        requestAnimationFrame(() => backdrop.classList.add('visible'));
+        toggle.setAttribute('aria-expanded', 'true');
+        panel.setAttribute('aria-hidden', 'false');
+        document.body.classList.add('menu-open');
+    };
+
+    const closeMenu = () => {
+        panel.classList.remove('open');
+        backdrop.classList.remove('visible');
+        toggle.setAttribute('aria-expanded', 'false');
+        panel.setAttribute('aria-hidden', 'true');
+        document.body.classList.remove('menu-open');
+        if (subscribeDetails) subscribeDetails.open = false;
+        setTimeout(() => { backdrop.hidden = true; }, 200);
+    };
+
+    toggle.addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (panel.classList.contains('open')) closeMenu(); else openMenu();
+    });
+    if (closeBtn) closeBtn.addEventListener('click', closeMenu);
+    backdrop.addEventListener('click', closeMenu);
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && panel.classList.contains('open')) closeMenu();
+    });
+
+    panel.querySelectorAll('a[href]').forEach(a => {
+        a.addEventListener('click', () => closeMenu());
+    });
 }
 
 // ---------- Load events ----------
@@ -912,13 +938,6 @@ function setupEventListeners() {
     const donateBtn = document.getElementById('donate-btn');
     if (donateBtn) donateBtn.addEventListener('click', donate);
 
-    // Report issue
-    const reportBtn = document.getElementById('report-issue-btn');
-    if (reportBtn) {
-        reportBtn.addEventListener('click', () => {
-            window.open('https://docs.google.com/forms/d/e/1FAIpQLScEcmD-j6pd9U9q323nQT5xMf2G8AW2X4GkUAlGOr89ZlNwGg/viewform?embedded=true', '_blank');
-        });
-    }
 }
 
 // ---------- WebSocket ----------

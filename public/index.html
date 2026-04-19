@@ -3,17 +3,17 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Leuven Taiwanese Events</title>
-    <meta name="description" content="Plug into Leuven's Taiwanese community pulse—discover upcoming meetups and RSVP in seconds.">
+    <title>Lilai</title>
+    <meta name="description" content="Discover upcoming meetups and RSVP in seconds.">
     <meta property="og:type" content="website">
-    <meta property="og:title" content="Leuven Taiwanese Events">
-    <meta property="og:description" content="Plug into the community pulse, one meetup at a time.">
+    <meta property="og:title" content="Lilai">
+    <meta property="og:description" content="Discover upcoming meetups and RSVP in seconds.">
     <meta property="og:image" content="/icons/icon-512x512.png">
     <meta property="og:image:width" content="512">
     <meta property="og:image:height" content="512">
     <meta name="twitter:card" content="summary_large_image">
-    <meta name="twitter:title" content="Leuven Taiwanese Events">
-    <meta name="twitter:description" content="Plug into the community pulse, one meetup at a time.">
+    <meta name="twitter:title" content="Lilai">
+    <meta name="twitter:description" content="Discover upcoming meetups and RSVP in seconds.">
     <meta name="twitter:image" content="/icons/icon-512x512.png">
     <link rel="stylesheet" href="styles.css">
     <link rel="manifest" href="manifest.json">
@@ -26,17 +26,41 @@
     <header class="home-header">
         <div class="home-header-row">
             <div>
-                <div class="eyebrow">Community</div>
-                <h1 class="display">Leuven Taiwanese Events</h1>
-                <p class="home-tagline">Plug into the community pulse — discover upcoming meetups and RSVP in seconds.</p>
+                <div class="eyebrow">Leuven Taiwanese Community</div>
+                <h1 class="display">Lilai</h1>
             </div>
             <nav class="app-header-links" aria-label="Site links">
                 <a href="faq.html">FAQ</a>
                 <a href="https://scribehow.com/viewer/How-Tos_Leuven_TW_Events_App__YwcZtJtHSDy8NbjlWa_KgQ" target="_blank" rel="noopener noreferrer">How-To's</a>
+                <a href="https://docs.google.com/forms/d/e/1FAIpQLScEcmD-j6pd9U9q323nQT5xMf2G8AW2X4GkUAlGOr89ZlNwGg/viewform?embedded=true" target="_blank" rel="noopener noreferrer">Report Issue</a>
                 <a href="donations.html">Donate</a>
             </nav>
+            <button type="button" class="menu-toggle" id="menu-toggle" aria-label="Open menu" aria-expanded="false" aria-controls="menu-panel">
+                <span class="menu-bars" aria-hidden="true"><span></span><span></span><span></span></span>
+            </button>
         </div>
     </header>
+
+    <div class="menu-backdrop" id="menu-backdrop" hidden></div>
+    <aside class="menu-panel" id="menu-panel" aria-hidden="true" aria-label="Menu">
+        <div class="menu-panel-header">
+            <span class="menu-panel-title">Menu</span>
+            <button type="button" class="menu-close" id="menu-close" aria-label="Close menu">&times;</button>
+        </div>
+        <nav class="menu-links" aria-label="Site links">
+            <a href="faq.html">FAQ</a>
+            <a href="https://scribehow.com/viewer/How-Tos_Leuven_TW_Events_App__YwcZtJtHSDy8NbjlWa_KgQ" target="_blank" rel="noopener noreferrer">How-To's</a>
+            <a href="https://docs.google.com/forms/d/e/1FAIpQLScEcmD-j6pd9U9q323nQT5xMf2G8AW2X4GkUAlGOr89ZlNwGg/viewform?embedded=true" target="_blank" rel="noopener noreferrer">Report Issue</a>
+            <a href="donations.html">Donate</a>
+        </nav>
+        <div class="menu-divider" aria-hidden="true"></div>
+        <div class="menu-section-title">Calendar</div>
+        <details class="menu-subscribe">
+            <summary>Subscribe</summary>
+            <div class="menu-subscribe-list" id="mobile-add-to-calendar-dropdown"></div>
+        </details>
+        <a href="#" id="mobile-join-group-link" class="menu-link-item">Join group</a>
+    </aside>
 
     <main>
         <div class="home-layout">
@@ -44,11 +68,6 @@
                 <!-- Mobile-only quick actions (shown instead of calendar card on mobile) -->
                 <div class="mobile-cal-actions" aria-label="Calendar actions">
                     <a href="https://calendar.google.com/calendar/u/0/r/eventedit" target="_blank" rel="noopener noreferrer" class="cal-action-pill accent" id="mobile-create-event">+ Create event</a>
-                    <div class="dropdown" id="mobile-subscribe-dropdown">
-                        <button type="button" class="cal-action-pill" id="mobile-subscribe-btn">Subscribe</button>
-                        <div class="dropdown-content" id="mobile-add-to-calendar-dropdown"></div>
-                    </div>
-                    <a href="#" id="mobile-join-group-link" class="cal-action-pill">Join group</a>
                 </div>
 
                 <div class="section-header">
@@ -110,7 +129,6 @@
                     <p style="color: var(--text-secondary); font-size: 14px; margin: 0 0 var(--s-4);">Hosting this app costs money. Donations go directly to operating expenses.</p>
                     <div class="cta-row">
                         <a href="donations.html" class="btn accent sm">Donate</a>
-                        <button type="button" class="btn ghost sm" id="report-issue-btn">Report issue</button>
                     </div>
                 </div>
             </aside>
@@ -180,12 +198,6 @@
 
     <footer class="bottom-banner">
         <div class="banner-content">
-            <p class="support-header support-line" data-index="0">Built by Fisher Kuan — a small labour of love for Leuven's Taiwanese community.</p>
-            <div class="cta-row">
-                <a class="btn ghost sm" href="faq.html">FAQ</a>
-                <a class="btn ghost sm" href="https://scribehow.com/viewer/How-Tos_Leuven_TW_Events_App__YwcZtJtHSDy8NbjlWa_KgQ" target="_blank" rel="noopener noreferrer">How-To's</a>
-                <a class="btn ghost sm" href="donations.html">Donate</a>
-            </div>
             <p class="copyright">&copy; Built by Fisher Kuan</p>
         </div>
     </footer>

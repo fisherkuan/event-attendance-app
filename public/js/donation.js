@@ -23,33 +23,32 @@ function debounce(func, wait, immediate) {
     };
 }
 
+const BALANCE_BAR_RANGE = 100; // euros on each side of zero
+
 document.addEventListener('DOMContentLoaded', () => {
     loadDonations();
-    loadDonationProgress();
     setupDonateButton();
     setupRefreshButton();
 });
 
-async function loadDonationProgress() {
-    try {
-        const res = await fetch(`${API_BASE_URL}/api/donation-progress`);
-        if (!res.ok) return;
-        const { current, goal } = await res.json();
-        if (!goal || goal <= 0) return;
-        const wrap = document.getElementById('donation-progress-wrap');
-        const fill = document.getElementById('donation-progress-fill');
-        const cur = document.getElementById('donation-progress-current');
-        const goalEl = document.getElementById('donation-progress-goal');
-        if (!wrap || !fill || !cur || !goalEl) return;
-        const pct = Math.max(0, Math.min(100, Math.round((current / goal) * 100)));
-        fill.style.width = `${pct}%`;
-        const fmt = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 });
-        cur.textContent = `${fmt.format(current)} raised`;
-        goalEl.textContent = `Goal · ${fmt.format(goal)}`;
-        wrap.hidden = false;
-    } catch (err) {
-        console.error('Error loading donation progress:', err);
+function renderBalanceBar(balance) {
+    const fill = document.getElementById('donation-progress-fill');
+    if (!fill) return;
+    const min = document.getElementById('balance-bar-min');
+    const max = document.getElementById('balance-bar-max');
+    if (min) min.textContent = `−€${BALANCE_BAR_RANGE}`;
+    if (max) max.textContent = `+€${BALANCE_BAR_RANGE}`;
+    const clamped = Math.max(-BALANCE_BAR_RANGE, Math.min(BALANCE_BAR_RANGE, balance));
+    const magnitudePct = Math.abs(clamped) / BALANCE_BAR_RANGE * 50;
+    if (clamped >= 0) {
+        fill.style.left = '50%';
+        fill.style.right = 'auto';
+    } else {
+        fill.style.left = 'auto';
+        fill.style.right = '50%';
     }
+    fill.style.width = `${magnitudePct}%`;
+    fill.classList.toggle('negative', clamped < 0);
 }
 
 function setupRefreshButton() {
@@ -66,6 +65,7 @@ async function loadDonations() {
         
         donationData = data;
         displayBalance(data.balance);
+        renderBalanceBar(data.balance || 0);
         displayDonations(data.donations);
     } catch (error) {
         console.error('Error loading donations:', error);

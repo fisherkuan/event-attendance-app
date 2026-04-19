@@ -3,8 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Donations — Leuven Taiwanese Events</title>
-    <meta name="description" content="View donation balance and recent entries for the Leuven Taiwanese Events app.">
+    <title>Donations — Lilai</title>
+    <meta name="description" content="View donation balance and recent entries for the Lilai app.">
     <link rel="stylesheet" href="/styles.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Fraunces:opsz,wght@9..144,500;9..144,600&display=swap" rel="stylesheet">
     <link rel="icon" href="/icons/favicon.ico" type="image/x-icon">
@@ -18,17 +18,20 @@
         <div class="eyebrow">Balance</div>
         <span id="balance-amount" class="balance-amount">€0.00</span>
 
-        <div class="progress-wrap" id="donation-progress-wrap" hidden>
-            <div class="progress-track"><span id="donation-progress-fill" class="progress-fill" style="width: 0%;"></span></div>
-            <div class="progress-meta">
-                <span id="donation-progress-current">€0 raised</span>
-                <span id="donation-progress-goal">Goal · €0</span>
+        <div class="balance-bar-wrap" id="donation-progress-wrap">
+            <div class="balance-bar-track">
+                <span class="balance-bar-zero" aria-hidden="true"></span>
+                <span id="donation-progress-fill" class="balance-bar-fill"></span>
+            </div>
+            <div class="balance-bar-meta">
+                <span id="balance-bar-min"></span>
+                <span>€0</span>
+                <span id="balance-bar-max"></span>
             </div>
         </div>
 
         <div class="donation-cta-row">
             <button type="button" id="donate-btn" class="btn accent">Donate with Stripe</button>
-            <a href="/" class="btn ghost">Back to events</a>
         </div>
         <p style="color: var(--text-muted); font-size: 13px; max-width: 440px; margin: var(--s-3) auto 0;">
             Hosting this web app costs money — your support keeps it running. All donations go directly to operating expenses.
@@ -40,7 +43,7 @@
     <section class="donations-section">
         <div class="section-header">
             <div>
-                <h2 class="section-title">Ledger</h2>
+                <h2 class="section-title">Transactions</h2>
                 <div class="section-meta">Most recent entries</div>
             </div>
             <button type="button" id="refresh-donations-btn" class="btn ghost sm" title="Refresh entries">↻ Refresh</button>
@@ -52,7 +55,6 @@
 
     <footer class="bottom-banner">
         <div class="banner-content">
-            <p class="support-header support-line">Built by Fisher Kuan — a small labour of love for Leuven's Taiwanese community.</p>
             <p class="copyright">&copy; Built by Fisher Kuan</p>
         </div>
     </footer>
