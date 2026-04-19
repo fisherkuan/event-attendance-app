@@ -1,197 +1,122 @@
 document.addEventListener('DOMContentLoaded', async () => {
     const faqContainer = document.getElementById('faq-content');
-    const faqShell = document.querySelector('.faq-content-shell');
-
-    if (!faqContainer) {
-        return;
-    }
+    if (!faqContainer) return;
 
     try {
         const response = await fetch('faq.md');
-        if (!response.ok) {
-            throw new Error(`Failed to load FAQ content (status ${response.status})`);
-        }
-
+        if (!response.ok) throw new Error(`Failed to load FAQ (status ${response.status})`);
         const markdownText = await response.text();
-        faqContainer.innerHTML = renderMarkdown(markdownText);
+        faqContainer.innerHTML = renderFaqMarkdown(markdownText);
     } catch (error) {
         console.error('Error loading FAQ content:', error);
-        faqContainer.innerHTML = '<p class="faq-error">Unable to load FAQ content right now. Please try again later.</p>';
+        faqContainer.innerHTML = '<p class="error-message">Unable to load FAQ content right now. Please try again later.</p>';
     } finally {
-        if (faqShell) {
-            faqShell.setAttribute('aria-busy', 'false');
-        }
+        faqContainer.setAttribute('aria-busy', 'false');
     }
 });
 
-function renderMarkdown(markdownText) {
-    const lines = markdownText.split(/\r?\n/);
-    let htmlOutput = '';
-    let paragraphBuffer = [];
-    let tableBuffer = [];
-    let listBuffer = null;
+/**
+ * Renders FAQ markdown into accordion structure.
+ * - `# Title` and `## Section` → section headers (<h2>).
+ * - `### Question` → <details><summary>Question</summary>...answer...</details>.
+ * Inline markdown: **bold**, *italic*, [label](url), line breaks.
+ */
+function renderFaqMarkdown(markdown) {
+    const lines = markdown.split(/\r?\n/);
+    let out = '';
 
-    const flushParagraph = () => {
-        if (paragraphBuffer.length === 0) {
-            return;
-        }
-
-        const paragraphText = paragraphBuffer.join(' ').trim();
-        if (paragraphText) {
-            htmlOutput += `<p>${convertInlineMarkdown(paragraphText)}</p>`;
-        }
-        paragraphBuffer = [];
-    };
+    let currentAnswer = [];        // lines of current FAQ item answer
+    let currentQuestion = null;    // current question text
+    let listBuffer = null;         // { type: 'ol'|'ul', items: [] }
 
     const flushList = () => {
         if (!listBuffer || listBuffer.items.length === 0) {
             listBuffer = null;
-            return;
+            return '';
         }
-
-        const tagName = listBuffer.type === 'ol' ? 'ol' : 'ul';
-        htmlOutput += `<${tagName}>`;
-        listBuffer.items.forEach(item => {
-            htmlOutput += `<li>${convertInlineMarkdown(item)}</li>`;
-        });
-        htmlOutput += `</${tagName}>`;
+        const tag = listBuffer.type;
+        let html = `<${tag}>`;
+        listBuffer.items.forEach(i => { html += `<li>${inline(i)}</li>`; });
+        html += `</${tag}>`;
         listBuffer = null;
+        return html;
     };
 
-    const flushTable = () => {
-        if (tableBuffer.length === 0) {
-            return;
-        }
+    const flushAnswer = () => {
+        if (currentQuestion === null) return '';
+        let ansHtml = '';
+        let paraBuf = [];
 
-        const rows = tableBuffer.map(line => line.trim());
-        tableBuffer = [];
+        const flushPara = () => {
+            if (paraBuf.length === 0) return;
+            const text = paraBuf.join(' ').trim();
+            if (text) ansHtml += `<p>${inline(text)}</p>`;
+            paraBuf = [];
+        };
 
-        if (rows.length === 0) {
-            return;
-        }
+        currentAnswer.forEach(line => {
+            const ul = line.match(/^\s*[-*+]\s+(.*)$/);
+            const ol = line.match(/^\s*(\d+)\.\s+(.*)$/);
+            if (ul || ol) {
+                flushPara();
+                const type = ol ? 'ol' : 'ul';
+                if (!listBuffer || listBuffer.type !== type) {
+                    ansHtml += flushList();
+                    listBuffer = { type, items: [] };
+                }
+                listBuffer.items.push(ol ? ol[2] : ul[1]);
+            } else if (line.trim() === '') {
+                flushPara();
+                ansHtml += flushList();
+            } else {
+                ansHtml += flushList();
+                paraBuf.push(line.trim());
+            }
+        });
+        flushPara();
+        ansHtml += flushList();
 
-        const isDivider = row => /^\s*\|?\s*:?-{3,}:?\s*(\|\s*:?-{3,}:?\s*)*\|?\s*$/.test(row);
-        const cleanRow = row => row.replace(/^\s*\|?/, '').replace(/\|?\s*$/, '');
-        const splitCells = row => cleanRow(row).split('|').map(cell => convertInlineMarkdown(cell.trim()));
-
-        let headerCells = [];
-        let bodyRows = [];
-
-        if (rows.length > 1 && isDivider(rows[1])) {
-            headerCells = splitCells(rows[0]);
-            bodyRows = rows.slice(2).map(splitCells);
-        } else {
-            headerCells = splitCells(rows[0]);
-            bodyRows = rows.slice(1).map(splitCells);
-        }
-
-        htmlOutput += '<table>';
-        if (headerCells.length > 0) {
-            htmlOutput += '<thead><tr>';
-            headerCells.forEach(cell => {
-                htmlOutput += `<th>${cell}</th>`;
-            });
-            htmlOutput += '</tr></thead>';
-        }
-
-        if (bodyRows.length > 0) {
-            htmlOutput += '<tbody>';
-            bodyRows.forEach(cells => {
-                htmlOutput += '<tr>';
-                cells.forEach(cell => {
-                    htmlOutput += `<td>${cell}</td>`;
-                });
-                htmlOutput += '</tr>';
-            });
-            htmlOutput += '</tbody>';
-        }
-        htmlOutput += '</table>';
+        const html = `
+            <details class="faq-item">
+                <summary>${inline(currentQuestion)}</summary>
+                <div class="faq-answer">${ansHtml}</div>
+            </details>
+        `;
+        currentQuestion = null;
+        currentAnswer = [];
+        return html;
     };
 
-    const isTableLine = line => {
-        const trimmed = line.trim();
-        if (!trimmed) {
-            return false;
+    for (const line of lines) {
+        const h1 = line.match(/^#\s+(.*)$/);
+        const h2 = line.match(/^##\s+(.*)$/);
+        const h3 = line.match(/^###\s+(.*)$/);
+
+        if (h3) {
+            out += flushAnswer();
+            currentQuestion = h3[1].trim();
+            currentAnswer = [];
+        } else if (h2) {
+            out += flushAnswer();
+            out += `<h2 class="faq-section-header" style="margin-top:1.5rem;margin-bottom:0.5rem;font-size:14px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.08em;">${inline(h2[1].trim())}</h2>`;
+        } else if (h1) {
+            // skip — handled in page hero
+        } else if (currentQuestion !== null) {
+            currentAnswer.push(line);
         }
-        if (!trimmed.includes('|')) {
-            return false;
-        }
-        const pipeCount = (trimmed.match(/\|/g) || []).length;
-        if (pipeCount < 2) {
-            return false;
-        }
-        return true;
-    };
-
-    lines.forEach(line => {
-        const unorderedMatch = line.match(/^\s*[-*+]\s+(.*)$/);
-        const orderedMatch = line.match(/^\s*(\d+)\.\s+(.*)$/);
-
-        if (tableBuffer.length > 0 && !isTableLine(line) && line.trim() !== '') {
-            flushTable();
-        }
-
-        if (isTableLine(line)) {
-            flushParagraph();
-            flushList();
-            tableBuffer.push(line);
-            return;
-        }
-
-        if (/^#{1,6}\s/.test(line)) {
-            flushParagraph();
-            flushTable();
-            flushList();
-            const headingMatch = line.match(/^(#{1,6})\s+(.*)$/);
-            if (!headingMatch) {
-                return;
-            }
-
-            const level = headingMatch[1].length;
-            const content = headingMatch[2].trim();
-            htmlOutput += `<h${level}>${convertInlineMarkdown(content)}</h${level}>`;
-        } else if (unorderedMatch || orderedMatch) {
-            flushParagraph();
-            flushTable();
-            const type = orderedMatch ? 'ol' : 'ul';
-            const itemText = orderedMatch ? orderedMatch[2].trim() : unorderedMatch[1].trim();
-
-            if (!listBuffer || listBuffer.type !== type) {
-                flushList();
-                listBuffer = { type, items: [] };
-            }
-            listBuffer.items.push(itemText);
-        } else if (line.trim() === '') {
-            flushParagraph();
-            flushTable();
-            flushList();
-        } else {
-            if (listBuffer) {
-                flushList();
-            }
-            paragraphBuffer.push(line.trim());
-        }
-    });
-
-    flushParagraph();
-    flushTable();
-    flushList();
-    return htmlOutput;
+        // otherwise ignore preamble text before first ###
+    }
+    out += flushAnswer();
+    return out;
 }
 
-function convertInlineMarkdown(text) {
-    if (!text) {
-        return '';
-    }
-
-    const linkPattern = /\[([^\]]+)]\(([^)]+)\)/g;
-
-    const withLinks = text.replace(linkPattern, (match, label, href) => {
+function inline(text) {
+    if (!text) return '';
+    // Links [label](url)
+    const withLinks = text.replace(/\[([^\]]+)\]\(([^)]+)\)/g, (m, label, href) => {
         const safeHref = href.trim().replace(/"/g, '&quot;');
-        const linkText = convertInlineMarkdown(label);
-        return `<a href="${safeHref}" target="_blank" rel="noopener noreferrer">${linkText}</a>`;
+        return `<a href="${safeHref}" target="_blank" rel="noopener noreferrer">${inline(label)}</a>`;
     });
-
     return withLinks
         .replace(/__(.*?)__/g, '<strong>$1</strong>')
         .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')

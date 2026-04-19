@@ -19,7 +19,8 @@
   "events": {
     "autoFetch": true,
     "defaultTimeRange": "future",
-    "refreshInterval": 300000
+    "refreshInterval": 300000,
+    "defaultCreateCalendar": "揪團啦"
   },
   "rsvp": {
     "allowAnonymous": false,

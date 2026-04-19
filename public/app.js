@@ -1,23 +1,23 @@
-// Debounce function
+// Event Attendance App - Main JavaScript (redesigned)
+
+// ---------- Utilities ----------
 function debounce(func, wait, immediate) {
-    var timeout;
-    return function() {
-        var context = this, args = arguments;
-        var later = function() {
+    let timeout;
+    return function () {
+        const context = this, args = arguments;
+        const later = function () {
             timeout = null;
             if (!immediate) func.apply(context, args);
         };
-        var callNow = immediate && !timeout;
+        const callNow = immediate && !timeout;
         clearTimeout(timeout);
         timeout = setTimeout(later, wait);
         if (callNow) func.apply(context, args);
     };
-};
+}
 
 function escapeHtml(value) {
-    if (value === null || value === undefined) {
-        return '';
-    }
+    if (value === null || value === undefined) return '';
     return String(value)
         .replace(/&/g, '&amp;')
         .replace(/</g, '&lt;')
@@ -26,72 +26,13 @@ function escapeHtml(value) {
         .replace(/'/g, '&#39;');
 }
 
-// Toast notification system
-let toastTimeout = null;
-
-function showToast(message, type = 'info', duration = 4000) {
-    // Remove existing toast if any
-    const existingToast = document.querySelector('.toast');
-    if (existingToast) {
-        existingToast.remove();
-        if (toastTimeout) {
-            clearTimeout(toastTimeout);
-        }
-    }
-
-    // Create toast element
-    const toast = document.createElement('div');
-    toast.className = `toast ${type}`;
-    toast.textContent = message;
-    toast.setAttribute('role', 'alert');
-    toast.setAttribute('aria-live', 'polite');
-
-    // Add to DOM
-    document.body.appendChild(toast);
-
-    // Trigger animation
-    requestAnimationFrame(() => {
-        toast.classList.add('show');
-    });
-
-    // Auto-dismiss
-    toastTimeout = setTimeout(() => {
-        hideToast(toast);
-    }, duration);
-
-    // Click to dismiss
-    toast.addEventListener('click', () => {
-        hideToast(toast);
-    });
-
-    return toast;
-}
-
-function hideToast(toast) {
-    if (!toast) return;
-
-    toast.classList.remove('show');
-    setTimeout(() => {
-        toast.remove();
-    }, 300);
-
-    if (toastTimeout) {
-        clearTimeout(toastTimeout);
-        toastTimeout = null;
-    }
-}
-
 function escapeAttribute(value) {
     return escapeHtml(value).replace(/\n/g, '&#10;');
 }
 
 function sanitizeUrl(rawUrl) {
-    if (typeof rawUrl !== 'string' || rawUrl.length === 0) {
-        return null;
-    }
-
+    if (typeof rawUrl !== 'string' || rawUrl.length === 0) return null;
     const trimmed = rawUrl.trim().replace(/[\s"'<>)]*$/, '');
-
     try {
         const validated = new URL(trimmed);
         if (validated.protocol === 'http:' || validated.protocol === 'https:') {
@@ -100,255 +41,89 @@ function sanitizeUrl(rawUrl) {
     } catch (error) {
         return null;
     }
-
     return null;
 }
 
 function extractEventLink(value) {
-    if (typeof value !== 'string' || value.length === 0) {
-        return null;
-    }
-
+    if (typeof value !== 'string' || value.length === 0) return null;
     const linkMatch = value.match(/link:?\s*(https?:\/\/\S+)/i);
     if (linkMatch) {
         const sanitized = sanitizeUrl(linkMatch[1]);
-        if (sanitized) {
-            return sanitized;
-        }
+        if (sanitized) return sanitized;
     }
-
     const fallbackMatch = value.match(/https?:\/\/\S+/i);
     if (fallbackMatch) {
         const sanitized = sanitizeUrl(fallbackMatch[0]);
-        if (sanitized) {
-            return sanitized;
-        }
+        if (sanitized) return sanitized;
     }
-
     return null;
 }
 
-// Event Attendance App - Main JavaScript File
+// ---------- Toast ----------
+let toastTimeout = null;
+function showToast(message, type = 'info', duration = 3500) {
+    const existing = document.querySelector('.toast');
+    if (existing) {
+        existing.remove();
+        if (toastTimeout) clearTimeout(toastTimeout);
+    }
+    const toast = document.createElement('div');
+    toast.className = `toast ${type}`;
+    toast.textContent = message;
+    toast.setAttribute('role', 'alert');
+    toast.setAttribute('aria-live', 'polite');
+    document.body.appendChild(toast);
+    toastTimeout = setTimeout(() => {
+        toast.remove();
+        toastTimeout = null;
+    }, duration);
+    toast.addEventListener('click', () => {
+        toast.remove();
+        if (toastTimeout) { clearTimeout(toastTimeout); toastTimeout = null; }
+    });
+}
 
-// Configuration
+// ---------- State ----------
 const API_BASE_URL = window.location.origin;
+const PAST_BATCH = 10;
 
-// State management
-let currentEvents = [];
-let currentEventForRsvp = null;
 let appConfig = {};
+let currentEvents = [];         // events currently shown
+let currentRange = 'future';    // 'future' | 'all'
+let oldestLoadedDate = null;    // ISO string of earliest loaded event (for 'all' range)
+let hasMoreOlder = true;        // whether more past events may exist
+let currentEventForRsvp = null;
 
-// DOM Elements
+// DOM
 const calendarContainer = document.getElementById('calendar-container');
 const eventsList = document.getElementById('events-list');
 const rsvpModal = document.getElementById('rsvp-modal');
-const rsvpForm = document.getElementById('rsvp-form');
-const attendanceSummary = document.getElementById('attendance-summary');
-const appTitle = document.querySelector('.app-title');
-const headerSubtitle = document.querySelector('.header-subtitle');
-const MOBILE_VIEW_QUERY = window.matchMedia('(max-width: 480px)');
-const TABLET_VIEW_QUERY = window.matchMedia('(max-width: 768px)');
 
-const HEADER_CONTENT = {
-    title: 'Leuven Taiwanese Events',
-    mobileTitle: 'Leuven TW Events',
-    subtitle: ''
-};
-
-function isMobileViewport() {
-    return MOBILE_VIEW_QUERY.matches;
-}
-
-function applyHeaderContent() {
-    if (!appTitle) {
-        return;
-    }
-
-    const useMobileTitle = isMobileViewport() && HEADER_CONTENT.mobileTitle;
-    const titleText = useMobileTitle ? HEADER_CONTENT.mobileTitle : HEADER_CONTENT.title;
-    appTitle.textContent = titleText || '';
-
-    if (headerSubtitle) {
-        const shouldShowSubtitle = Boolean(HEADER_CONTENT.subtitle) && !isMobileViewport();
-        headerSubtitle.textContent = shouldShowSubtitle ? HEADER_CONTENT.subtitle : '';
-        headerSubtitle.hidden = !shouldShowSubtitle;
-    }
-}
-
-function handleViewportChange() {
-    applyHeaderContent();
-}
-
-if (typeof MOBILE_VIEW_QUERY.addEventListener === 'function') {
-    MOBILE_VIEW_QUERY.addEventListener('change', handleViewportChange);
-} else if (typeof MOBILE_VIEW_QUERY.addListener === 'function') {
-    MOBILE_VIEW_QUERY.addListener(handleViewportChange);
-}
-
-// Initialize the app when DOM is loaded
+// ---------- Service Worker ----------
 if ('serviceWorker' in navigator) {
-  window.addEventListener('load', () => {
-    navigator.serviceWorker.register('/sw.js').then(registration => {
-      console.log('ServiceWorker registration successful with scope: ', registration.scope);
-    }, err => {
-      console.log('ServiceWorker registration failed: ', err);
+    window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/sw.js').catch(err => {
+            console.log('ServiceWorker registration failed: ', err);
+        });
     });
-  });
 }
 
-document.addEventListener('DOMContentLoaded', function() {
-    initializeApp();
-});
+// ---------- Init ----------
+document.addEventListener('DOMContentLoaded', initializeApp);
 
 function initializeApp() {
-    applyHeaderContent();
-    
-    // Load configuration first
     loadConfig().then(() => {
-        // Set up calendar integration
         setupCalendar();
-        
-        // Populate calendar filter
         populateCalendarFilter();
-
-        // Load events
-        loadEvents();
-        
-        // Set up event listeners
+        setupFilterPills();
+        setupMobileActions();
         setupEventListeners();
-
-        // Set up WebSocket connection
         setupWebSocket();
-
-        // Set up scroll-snap page indicators
-        setupScrollSnapIndicators();
-
-        // Load donation balance for button (don't block on this)
-        loadDonationBalance().catch(err => {
-            console.error('Failed to load donation balance:', err);
-        });
-    }).catch(error => {
-        console.error('Error initializing app:', error);
-    });
+        loadEvents();
+    }).catch(err => console.error('Init error:', err));
 }
 
-// Scroll-snap page indicators for mobile
-function setupScrollSnapIndicators() {
-    // Only activate on mobile/tablet
-    if (!TABLET_VIEW_QUERY.matches) {
-        return;
-    }
-
-    const scrollContainer = document.querySelector('.scroll-snap-container');
-    const pageDots = document.querySelectorAll('.page-dot');
-    
-    if (!scrollContainer || !pageDots.length) {
-        return;
-    }
-
-    // Update active dot based on scroll position
-    const updateActiveDot = debounce(() => {
-        const scrollLeft = scrollContainer.scrollLeft;
-        const windowWidth = window.innerWidth;
-
-        // Calculate which page we're on (0, 1, or 2)
-        const currentPage = Math.round(scrollLeft / windowWidth);
-        const maxPageIndex = pageDots.length - 1;
-        const clampedPage = Math.max(0, Math.min(maxPageIndex, currentPage));
-        
-        // Update dot active states
-        pageDots.forEach((dot, index) => {
-            if (index === clampedPage) {
-                dot.classList.add('active');
-            } else {
-                dot.classList.remove('active');
-            }
-        });
-    }, 100);
-
-    // Listen to scroll events
-    scrollContainer.addEventListener('scroll', updateActiveDot);
-    window.addEventListener('resize', updateActiveDot);
-
-    // Click handler for dots - scroll to page
-    pageDots.forEach((dot, index) => {
-        dot.addEventListener('click', () => {
-            const targetScrollLeft = index * window.innerWidth;
-            scrollContainer.scrollTo({
-                left: targetScrollLeft,
-                top: 0,
-                behavior: 'smooth'
-            });
-        });
-    });
-
-    // Initial update
-    updateActiveDot();
-
-    // Show first-time swipe hint
-    if (!localStorage.getItem('swipeHintShown') && TABLET_VIEW_QUERY.matches) {
-        const hint = document.getElementById('swipe-hint');
-        if (hint) {
-            setTimeout(() => {
-                hint.classList.remove('hidden');
-                hint.classList.add('show');
-            }, 1000);
-
-            // Hide after 3 seconds or on first scroll
-            const hideHint = () => {
-                hint.classList.remove('show');
-                setTimeout(() => hint.classList.add('hidden'), 300);
-                localStorage.setItem('swipeHintShown', 'true');
-                scrollContainer.removeEventListener('scroll', hideHint);
-            };
-
-            setTimeout(hideHint, 4000);
-            scrollContainer.addEventListener('scroll', hideHint, { once: true });
-        }
-    }
-}
-
-// Set up WebSocket connection
-function setupWebSocket() {
-    const wsProtocol = window.location.protocol === 'https:' ? 'wss' : 'ws';
-    const wsUrl = `${wsProtocol}://${window.location.host}`;
-    const ws = new WebSocket(wsUrl);
-
-    ws.onopen = () => {
-        console.log('WebSocket connection established');
-    };
-
-    ws.onmessage = (message) => {
-        try {
-            const data = JSON.parse(message.data);
-            if (data.type === 'attendance_update') {
-                const { eventId, attendingCount, attendees } = data.payload;
-                const eventIndex = currentEvents.findIndex(e => e.id === eventId);
-
-                if (eventIndex !== -1) {
-                    // Update only attendance-related fields
-                    currentEvents[eventIndex].attendingCount = attendingCount;
-                    currentEvents[eventIndex].attendees = attendees;
-                    displayEvents(); // Re-render the events list
-                }
-            }
-        } catch (error) {
-            console.error('Error processing WebSocket message:', error);
-        }
-    };
-
-    ws.onclose = () => {
-        console.log('WebSocket connection closed. Attempting to reconnect...');
-        // Simple reconnect logic
-        setTimeout(setupWebSocket, 5000);
-    };
-
-    ws.onerror = (error) => {
-        console.error('WebSocket error:', error);
-    };
-}
-
-// Load configuration from server
+// ---------- Config ----------
 async function loadConfig() {
     try {
         const response = await fetch(`${API_BASE_URL}/api/config`);
@@ -363,319 +138,557 @@ async function loadConfig() {
     }
 }
 
-// Set up calendar based on configuration
+// ---------- Calendar (custom month grid) ----------
+let currentCalendarMonth = null; // { year, month } — month is 0-indexed
+let allCalendarEvents = [];      // independent of the events list filter — always all events
+
 function setupCalendar() {
-    if (!calendarContainer) {
+    if (!calendarContainer) return;
+
+    if (!appConfig.calendars || appConfig.calendars.length === 0) {
+        calendarContainer.innerHTML = '<p class="calendar-loading">Calendar not configured.</p>';
+        const dd = document.getElementById('add-to-calendar-dropdown');
+        if (dd && dd.parentElement) dd.parentElement.style.display = 'none';
         return;
     }
 
-    if (appConfig.calendars && appConfig.calendars.length > 0) {
-        const updateCalendarView = () => {
-            const isMobile = window.innerWidth < 768;
-            let baseCalendarUrl = "https://calendar.google.com/calendar/embed?height=600&wkst=1&ctz=Europe%2FBrussels&showPrint=0&showTitle=0";
-            let srcParams = "";
-            let colors = ["%237986cb", "%23b39ddb", "%23f6bf26"]; // Example colors, can be expanded or configured
-
-            appConfig.calendars.forEach((calendarEntry, index) => {
-                if (calendarEntry.enabled) {
-                    try {
-                        const u = new URL(calendarEntry.url);
-                        const src = u.searchParams.get('src');
-                        if (src) {
-                            srcParams += `&src=${src}`;
-                            if (colors[index]) {
-                                srcParams += `&color=${colors[index]}`;
-                            }
-                        }
-                    } catch (error) {
-                        console.error('Error parsing individual calendar URL:', calendarEntry.url, error);
-                    }
-                }
-            });
-
-            let finalCalendarUrl = `${baseCalendarUrl}${srcParams}`;
-
-            if (isMobile) {
-                if (!finalCalendarUrl.includes('mode=AGENDA')) {
-                    finalCalendarUrl += '&mode=AGENDA';
-                }
-            } else {
-                if (finalCalendarUrl.includes('mode=AGENDA')) {
-                    finalCalendarUrl = finalCalendarUrl.replace('mode=AGENDA', 'mode=MONTH');
-                } else if (!finalCalendarUrl.includes('mode=MONTH')) {
-                    finalCalendarUrl += '&mode=MONTH';
-                }
-            }
-
-            calendarContainer.innerHTML = `
-                <div id="calendar-lazy-loader" style="min-height: 600px; display: flex; align-items: center; justify-content: center; color: #718096;">
-                    <p>Loading calendar...</p>
-                </div>
-            `;
-
-            // Lazy load calendar iframe
-            const lazyLoadCalendar = () => {
-                const loader = document.getElementById('calendar-lazy-loader');
-                if (!loader) return;
-
-                const observer = new IntersectionObserver((entries) => {
-                    entries.forEach(entry => {
-                        if (entry.isIntersecting) {
-                            calendarContainer.innerHTML = `
-                                <iframe src="${finalCalendarUrl}"
-                                        style="border: 0"
-                                        width="100%"
-                                        height="600"
-                                        frameborder="0"
-                                        scrolling="no"
-                                        loading="lazy">
-                                </iframe>
-                            `;
-                            observer.disconnect();
-                        }
-                    });
-                }, { rootMargin: '200px' });
-
-                observer.observe(loader);
-            };
-
-            // Start observing
-            lazyLoadCalendar();
-        };
-
-        updateCalendarView();
-
-        window.addEventListener('resize', updateCalendarView);
-
-        const joinGroupLink = document.getElementById('join-group-link');
-        if (joinGroupLink && appConfig.joinGroupUrl) {
-            joinGroupLink.href = appConfig.joinGroupUrl;
-        }
-
-        const addToCalendarDropdown = document.getElementById('add-to-calendar-dropdown');
-        if (addToCalendarDropdown) {
-            if (addToCalendarDropdown.parentElement) {
-                addToCalendarDropdown.parentElement.style.display = '';
-            }
-            appConfig.calendars.forEach(calendar => {
-                if (calendar.enabled) {
-                    try {
-                        const u = new URL(calendar.url);
-                        const calendarId = u.searchParams.get('src');
-                        if (calendarId) {
-                            const link = document.createElement('a');
-                            link.href = `https://www.google.com/calendar/render?cid=${calendarId}`;
-                            link.textContent = calendar.name;
-                            link.target = '_blank';
-                            addToCalendarDropdown.appendChild(link);
-                        }
-                    } catch (error) {
-                        console.error('Error parsing calendar URL for Add to Calendar button:', error);
-                    }
-                }
-            });
-        }
-
-    } else {
-        calendarContainer.innerHTML = `
-            <div class="calendar-setup">
-                <h3>Calendar Integration</h3>
-                <p>Calendar integration is not configured. Please update the configuration file to enable calendar display.</p>
-            </div>
-        `;
-        const addToCalendarDropdown = document.getElementById('add-to-calendar-dropdown');
-        if (addToCalendarDropdown && addToCalendarDropdown.parentElement) {
-            addToCalendarDropdown.parentElement.style.display = 'none';
-        }
-    }
-}
-    
-    function populateCalendarFilter() {
-        const calendarFilterContainer = document.querySelector('.calendar-filter-container');
-        if (!calendarFilterContainer) return;
-    
-        // Clear existing content
-        calendarFilterContainer.innerHTML = '';
-    
-        if (appConfig.calendars && appConfig.calendars.length > 0) {
-            appConfig.calendars.forEach((calendarEntry) => {
-                if (calendarEntry.enabled) {
-                    try {
-                        const u = new URL(calendarEntry.url);
-                        const calendarId = u.searchParams.get('src');
-                        if (calendarId) {
-                            const label = document.createElement('label');
-                            const checkbox = document.createElement('input');
-                            checkbox.type = 'checkbox';
-                            checkbox.className = 'calendar-checkbox';
-                            checkbox.value = calendarId;
-                            checkbox.checked = true; // By default, all are checked
-                            checkbox.addEventListener('change', debounce(loadEvents, 250)); // Re-load events on change
-    
-                            label.appendChild(checkbox);
-                            label.appendChild(document.createTextNode(` ${calendarEntry.name}`));
-                            calendarFilterContainer.appendChild(label);
-                        }
-                    } catch (error) {
-                        console.error('Error parsing calendar URL for filter:', calendarEntry.url, error);
-                    }
-                }
-            });
-        }
-    }
-
-
-function loadEvents() {
-    const timeRange = document.getElementById('time-range')?.value || appConfig.events?.defaultTimeRange || 'future';
-    
-    // Load events from the server with time range filter
-    fetch(`${API_BASE_URL}/api/events?timeRange=${timeRange}`, {
-        cache: 'no-store',
-        headers: {
-            'Cache-Control': 'no-cache'
-        }
-    })
-        .then(response => response.json())
-        .then(events => {
-            currentEvents = events;
-            displayEvents();
-        })
-        .catch(error => {
-            console.error('Error loading events:', error);
-            eventsList.innerHTML = '<p>Error loading events. Please try again later.</p>';
-        });
-}
-
-function displayEvents() {
-    const selectedCalendarIds = Array.from(document.querySelectorAll('.calendar-checkbox:checked'))
-                                     .map(checkbox => checkbox.value);
-
-    let filteredEvents = currentEvents;
-
-    if (selectedCalendarIds.length > 0 && selectedCalendarIds.length < appConfig.calendars.length) {
-        filteredEvents = currentEvents.filter(event => selectedCalendarIds.includes(event.source));
-    }
-
-    if (filteredEvents.length === 0) {
-        eventsList.innerHTML = '<p>No events available for RSVP at this time.</p>';
-        return;
-    }
-    
     const now = new Date();
-    const eventsHtml = filteredEvents.map(event => {
-        const eventDate = new Date(event.date);
-        const isPastEvent = eventDate < now;
-        const formattedDate = eventDate.toLocaleDateString('en-US', {
-            weekday: 'long',
-            year: 'numeric',
-            month: 'long',
-            day: 'numeric',
-            hour: '2-digit',
-            minute: '2-digit'
-        });
-        const sanitizedFormattedDate = escapeHtml(formattedDate);
+    currentCalendarMonth = { year: now.getFullYear(), month: now.getMonth() };
+    renderCalendarGrid();
+    loadAllCalendarEvents();
 
-        const sanitizedEventId = escapeAttribute(event.id);
-        const sanitizedTitle = escapeHtml(event.title);
+    // Join group links (desktop + mobile)
+    const joinLink = document.getElementById('join-group-link');
+    if (joinLink && appConfig.joinGroupUrl) joinLink.href = appConfig.joinGroupUrl;
+    const mobileJoinLink = document.getElementById('mobile-join-group-link');
+    if (mobileJoinLink && appConfig.joinGroupUrl) mobileJoinLink.href = appConfig.joinGroupUrl;
 
-        const descriptionText = typeof event.description === 'string' ? event.description : '';
-        const sanitizedDescription = escapeHtml(descriptionText).replace(/\n/g, '<br>');
-        const eventLink = extractEventLink(descriptionText);
+    // Add-to-calendar dropdowns (desktop + mobile)
+    populateAddToCalendarDropdown('add-to-calendar-dropdown');
+    populateAddToCalendarDropdown('mobile-add-to-calendar-dropdown');
 
-        const locationText = typeof event.location === 'string' ? event.location : '';
-        const sanitizedLocation = escapeHtml(locationText).replace(/\n/g, '<br>');
-
-        let footerContent = '';
-        let footerClasses = 'event-footer';
-
-        if (eventLink) {
-            footerClasses += ' event-footer-link';
-            const sanitizedEventLink = escapeAttribute(eventLink);
-            footerContent = `
-                    <a class="event-link-button" href="${sanitizedEventLink}" target="_blank" rel="noopener noreferrer">
-                        <span class="icon" aria-hidden="true">🔗</span>
-                        <span>Open Link</span>
-                    </a>
-            `;
-        } else {
-            const attendeesList = Array.isArray(event.attendees) ? event.attendees.map(escapeHtml) : [];
-            const attendanceInfo = attendeesList.join('\n');
-            const attendanceInfoAttr = escapeAttribute(attendanceInfo);
-
-            const isFull = event.attendance_limit !== null && event.attendingCount >= event.attendance_limit;
-
-            let attendanceText = `${event.attendingCount} Attending`;
-            if (event.attendance_limit !== null) {
-                attendanceText += ` / ${event.attendance_limit}`;
-            }
-            const sanitizedAttendanceText = escapeHtml(attendanceText);
-
-            const rsvpButtons = isPastEvent
-                ? '<div class="rsvp-disabled">Past Event - RSVP Closed</div>'
-                : `
-                    <div class="event-rsvp-buttons">
-                        <button class="rsvp-add-btn-small ${isFull ? 'rsvp-full-btn' : ''}" data-event-id="${sanitizedEventId}" data-action="add" ${isFull ? 'disabled' : ''}>
-                            <span class="icon">＋</span>
-                        </button>
-                        <button class="rsvp-remove-btn-small" data-event-id="${sanitizedEventId}" data-action="remove" ${event.attendingCount === 0 ? 'disabled' : ''}>
-                            <span class="icon">－</span>
-                        </button>
-                    </div>
-                `;
-
-            footerContent = `
-                    <div class="attendance-info" title="${attendanceInfoAttr}" tabindex="0" role="button" aria-label="${sanitizedAttendanceText}. Tap to see attendee names.">
-                        <span>${sanitizedAttendanceText}</span>
-                    </div>
-                    ${rsvpButtons}
-            `;
-        }
-        
-        return `
-            <div class="event-card" data-event-id="${sanitizedEventId}">
-                <h3>${sanitizedTitle}</h3>
-                <p class="event-date">${sanitizedFormattedDate}</p>
-                ${descriptionText ? `<p class="event-description">${sanitizedDescription}</p>` : ''}
-                ${locationText ? `<p class="event-location">📍 ${sanitizedLocation}</p>` : ''}
-                <div class="${footerClasses}">
-                    ${footerContent}
-                </div>
-            </div>
-        `;
-    }).join('');
-    
-    eventsList.innerHTML = eventsHtml;
+    // Point the "Create event" buttons at the configured default calendar (if any)
+    wireCreateEventButtons();
 }
 
-function openRsvpModal(eventId) {
-    console.log('openRsvpModal started for event:', eventId);
-    const event = currentEvents.find(e => e.id === eventId);
-    if (!event) {
-        console.error('Add Modal: Event not found!');
+function wireCreateEventButtons() {
+    const defaultName = appConfig.events && appConfig.events.defaultCreateCalendar;
+    // The documented "create event in calendar X" endpoint is render?action=TEMPLATE.
+    let href = 'https://calendar.google.com/calendar/render?action=TEMPLATE';
+    if (defaultName && Array.isArray(appConfig.calendars)) {
+        const match = appConfig.calendars.find(c => c.enabled && c.name === defaultName);
+        if (match) {
+            try {
+                const u = new URL(match.url);
+                const src = u.searchParams.get('src');
+                if (src) {
+                    href += `&src=${encodeURIComponent(src)}`;
+                }
+            } catch (_) { /* ignore */ }
+        }
+    }
+    const desktopBtn = document.getElementById('create-event-btn');
+    if (desktopBtn) desktopBtn.href = href;
+    const mobileBtn = document.getElementById('mobile-create-event');
+    if (mobileBtn) mobileBtn.href = href;
+}
+
+async function loadAllCalendarEvents() {
+    try {
+        const res = await fetch(`${API_BASE_URL}/api/events?timeRange=all`, { cache: 'no-store' });
+        if (!res.ok) return;
+        const events = await res.json();
+        if (!Array.isArray(events)) return;
+        allCalendarEvents = events;
+        renderCalendarGrid();
+    } catch (err) {
+        console.error('Error loading all events for calendar:', err);
+    }
+}
+
+function dayKey(d) {
+    return `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
+}
+
+function renderCalendarGrid() {
+    if (!calendarContainer || !currentCalendarMonth) return;
+    const { year, month } = currentCalendarMonth;
+
+    const first = new Date(year, month, 1);
+    const monthLabel = first.toLocaleString(undefined, { month: 'long', year: 'numeric' });
+
+    // Sync the header chip (e.g. "April 2026")
+    const chipLabel = document.getElementById('calendar-month-label');
+    if (chipLabel) chipLabel.textContent = monthLabel;
+
+    // Monday-first grid: JS getDay() is 0=Sun..6=Sat; shift to 0=Mon..6=Sun
+    const leading = (first.getDay() + 6) % 7;
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+    const totalCells = Math.ceil((leading + daysInMonth) / 7) * 7;
+
+    // Calendar always shows ALL events, independent of the events-list filter.
+    // Falls back to currentEvents before allCalendarEvents has loaded.
+    const calendarSource = allCalendarEvents.length > 0 ? allCalendarEvents : currentEvents;
+    const eventsByDay = {};
+    (calendarSource || []).forEach(ev => {
+        const d = new Date(ev.date);
+        const k = dayKey(d);
+        if (!eventsByDay[k]) eventsByDay[k] = [];
+        eventsByDay[k].push(ev);
+    });
+
+    const todayKey = dayKey(new Date());
+
+    let cells = '';
+    for (let i = 0; i < totalCells; i++) {
+        const cellDate = new Date(year, month, 1 + i - leading);
+        const isOut = cellDate.getMonth() !== month;
+        const k = dayKey(cellDate);
+        const isToday = k === todayKey;
+        const dayEvents = (eventsByDay[k] || []).slice().sort((a, b) => new Date(a.date) - new Date(b.date));
+
+        const classes = ['cal-cell'];
+        if (isOut) classes.push('out');
+        if (isToday) classes.push('today');
+        if (dayEvents.length > 0) classes.push('has-ev');
+
+        let evMarkup = '';
+        if (isToday && dayEvents.length === 0) {
+            evMarkup = '<span class="ev">Today</span>';
+        } else if (dayEvents.length > 0) {
+            const first = dayEvents[0];
+            const extra = dayEvents.length > 1 ? ` +${dayEvents.length - 1}` : '';
+            const titleAttr = escapeAttribute(dayEvents.map(e => e.title).join(', '));
+            evMarkup = `<span class="ev" title="${titleAttr}">${escapeHtml(first.title)}${extra}</span>`;
+        }
+
+        const firstId = dayEvents[0] ? dayEvents[0].id : '';
+        const clickAttrs = firstId ? ` data-event-id="${escapeAttribute(firstId)}" role="button" tabindex="0"` : '';
+        cells += `<div class="${classes.join(' ')}"${clickAttrs}>${cellDate.getDate()}${evMarkup}</div>`;
+    }
+
+    calendarContainer.innerHTML = `
+        <div class="calendar-preview">
+            <div class="cal-month-head">
+                <span class="mlabel">${escapeHtml(monthLabel)}</span>
+                <div class="arrows">
+                    <button type="button" class="cal-nav" data-dir="-1" aria-label="Previous month">&#x2039;</button>
+                    <button type="button" class="cal-nav" data-dir="0" aria-label="Jump to today">•</button>
+                    <button type="button" class="cal-nav" data-dir="1" aria-label="Next month">&#x203A;</button>
+                </div>
+            </div>
+            <div class="cal-dow">
+                <span>Mo</span><span>Tu</span><span>We</span><span>Th</span><span>Fr</span><span>Sa</span><span>Su</span>
+            </div>
+            <div class="cal-grid">${cells}</div>
+            <p class="cal-caption">Events synced from Google Calendar</p>
+        </div>
+    `;
+
+    calendarContainer.querySelectorAll('.cal-nav').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const dir = parseInt(btn.dataset.dir, 10);
+            if (dir === 0) {
+                const n = new Date();
+                currentCalendarMonth = { year: n.getFullYear(), month: n.getMonth() };
+            } else {
+                let m = currentCalendarMonth.month + dir;
+                let y = currentCalendarMonth.year;
+                if (m < 0) { m = 11; y -= 1; }
+                else if (m > 11) { m = 0; y += 1; }
+                currentCalendarMonth = { year: y, month: m };
+            }
+            renderCalendarGrid();
+        });
+    });
+
+    calendarContainer.querySelectorAll('.cal-cell[data-event-id]').forEach(cell => {
+        const activate = () => {
+            const id = cell.dataset.eventId;
+            const card = document.querySelector(`.event-card[data-event-id="${CSS.escape(id)}"]`);
+            if (card) {
+                card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                card.classList.add('cal-highlight');
+                setTimeout(() => card.classList.remove('cal-highlight'), 1500);
+            }
+        };
+        cell.addEventListener('click', activate);
+        cell.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); activate(); }
+        });
+    });
+}
+
+function populateAddToCalendarDropdown(id) {
+    const dd = document.getElementById(id);
+    if (!dd) return;
+    dd.innerHTML = '';
+    appConfig.calendars.forEach(cal => {
+        if (!cal.enabled) return;
+        try {
+            const u = new URL(cal.url);
+            const calendarId = u.searchParams.get('src');
+            if (!calendarId) return;
+            const link = document.createElement('a');
+            link.href = `https://www.google.com/calendar/render?cid=${calendarId}`;
+            link.textContent = cal.name;
+            link.target = '_blank';
+            link.rel = 'noopener noreferrer';
+            dd.appendChild(link);
+        } catch (_) { /* ignore */ }
+    });
+}
+
+// ---------- Calendar filter (chips) ----------
+function populateCalendarFilter() {
+    const container = document.querySelector('.calendar-filter-container');
+    if (!container) return;
+    container.innerHTML = '';
+    if (!appConfig.calendars || appConfig.calendars.length === 0) return;
+
+    appConfig.calendars.forEach(cal => {
+        if (!cal.enabled) return;
+        try {
+            const u = new URL(cal.url);
+            const calendarId = u.searchParams.get('src');
+            if (!calendarId) return;
+            const label = document.createElement('label');
+            label.className = 'calendar-filter-item active';
+            const checkbox = document.createElement('input');
+            checkbox.type = 'checkbox';
+            checkbox.className = 'calendar-checkbox';
+            checkbox.value = calendarId;
+            checkbox.checked = true;
+            checkbox.addEventListener('change', () => {
+                label.classList.toggle('active', checkbox.checked);
+                displayEvents();
+            });
+            label.appendChild(checkbox);
+            label.appendChild(document.createTextNode(` ${cal.name}`));
+            container.appendChild(label);
+        } catch (_) { /* ignore */ }
+    });
+}
+
+// ---------- Filter pills (Upcoming / All) ----------
+function setupFilterPills() {
+    const pills = document.querySelectorAll('.filter-pill');
+    pills.forEach(pill => {
+        pill.addEventListener('click', () => {
+            const range = pill.dataset.range;
+            if (!range || range === currentRange) return;
+            pills.forEach(p => {
+                p.classList.toggle('active', p === pill);
+                p.setAttribute('aria-selected', p === pill ? 'true' : 'false');
+            });
+            currentRange = range;
+            // sync hidden select for any legacy consumer
+            const hidden = document.getElementById('time-range');
+            if (hidden) hidden.value = range;
+            loadEvents();
+        });
+    });
+}
+
+// ---------- Mobile actions ----------
+function setupMobileActions() {
+    const toggle = document.getElementById('menu-toggle');
+    const panel = document.getElementById('menu-panel');
+    const backdrop = document.getElementById('menu-backdrop');
+    const closeBtn = document.getElementById('menu-close');
+    if (!toggle || !panel || !backdrop) return;
+
+    const subscribeDetails = panel.querySelector('.menu-subscribe');
+
+    const openMenu = () => {
+        panel.classList.add('open');
+        backdrop.hidden = false;
+        requestAnimationFrame(() => backdrop.classList.add('visible'));
+        toggle.setAttribute('aria-expanded', 'true');
+        panel.setAttribute('aria-hidden', 'false');
+        document.body.classList.add('menu-open');
+    };
+
+    const closeMenu = () => {
+        panel.classList.remove('open');
+        backdrop.classList.remove('visible');
+        toggle.setAttribute('aria-expanded', 'false');
+        panel.setAttribute('aria-hidden', 'true');
+        document.body.classList.remove('menu-open');
+        if (subscribeDetails) subscribeDetails.open = false;
+        setTimeout(() => { backdrop.hidden = true; }, 200);
+    };
+
+    toggle.addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (panel.classList.contains('open')) closeMenu(); else openMenu();
+    });
+    if (closeBtn) closeBtn.addEventListener('click', closeMenu);
+    backdrop.addEventListener('click', closeMenu);
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && panel.classList.contains('open')) closeMenu();
+    });
+
+    panel.querySelectorAll('a[href]').forEach(a => {
+        a.addEventListener('click', () => closeMenu());
+    });
+}
+
+// ---------- Load events ----------
+function loadEvents() {
+    oldestLoadedDate = null;
+    hasMoreOlder = (currentRange === 'all');
+
+    // Both modes initially load future events only.
+    // 'all' mode additionally exposes "Load earlier events" to lazy-fetch past batches.
+    const url = `${API_BASE_URL}/api/events?timeRange=future`;
+    eventsList.innerHTML = '<div class="loading">Loading events...</div>';
+
+    fetch(url, { cache: 'no-store', headers: { 'Cache-Control': 'no-cache' } })
+        .then(res => res.json())
+        .then(events => {
+            events.sort((a, b) => new Date(a.date) - new Date(b.date));
+            currentEvents = events;
+            if (events.length > 0) {
+                oldestLoadedDate = events[0].date;
+            } else {
+                // No future events — anchor cursor at "now" so past-batch fetch works
+                oldestLoadedDate = new Date().toISOString();
+            }
+            displayEvents({ scrollToToday: currentRange === 'all' });
+            renderCalendarGrid();
+            // In 'all' mode, eagerly fetch the first batch of past events so the user
+            // doesn't need to click "Load earlier events" to see anything in the past.
+            if (currentRange === 'all' && hasMoreOlder) {
+                loadOlderEvents({ preserveScroll: false });
+            }
+        })
+        .catch(err => {
+            console.error('Error loading events:', err);
+            eventsList.innerHTML = '<p class="error-message">Error loading events. Please try again later.</p>';
+        });
+}
+
+async function loadOlderEvents(options = {}) {
+    if (!oldestLoadedDate || !hasMoreOlder) return;
+    const preserveScroll = options.preserveScroll !== false;
+    const btn = document.querySelector('.load-earlier-btn');
+    if (btn) { btn.disabled = true; btn.textContent = 'Loading…'; }
+
+    try {
+        const url = `${API_BASE_URL}/api/events?before=${encodeURIComponent(oldestLoadedDate)}&limit=${PAST_BATCH}`;
+        const res = await fetch(url, { cache: 'no-store' });
+        const older = await res.json();
+        if (!Array.isArray(older) || older.length === 0) {
+            hasMoreOlder = false;
+            displayEvents();
+            return;
+        }
+        older.sort((a, b) => new Date(a.date) - new Date(b.date));
+        const existingIds = new Set(currentEvents.map(e => e.id));
+        const prepend = older.filter(e => !existingIds.has(e.id));
+        if (prepend.length === 0) {
+            hasMoreOlder = false;
+        } else {
+            currentEvents = prepend.concat(currentEvents);
+            oldestLoadedDate = currentEvents[0].date;
+            if (older.length < PAST_BATCH) hasMoreOlder = false;
+        }
+
+        if (preserveScroll) {
+            const prevHeight = eventsList.scrollHeight;
+            displayEvents();
+            const newHeight = eventsList.scrollHeight;
+            window.scrollBy(0, newHeight - prevHeight);
+        } else {
+            displayEvents({ scrollToToday: true });
+        }
+    } catch (err) {
+        console.error('Error loading older events:', err);
+        if (btn) { btn.disabled = false; btn.textContent = 'Load earlier events'; }
+    }
+}
+
+// ---------- Render events ----------
+function displayEvents(options = {}) {
+    const selectedIds = Array.from(document.querySelectorAll('.calendar-checkbox:checked')).map(c => c.value);
+    let filtered = currentEvents;
+    if (selectedIds.length > 0 && appConfig.calendars && selectedIds.length < appConfig.calendars.filter(c => c.enabled).length) {
+        filtered = currentEvents.filter(e => selectedIds.includes(e.source));
+    }
+
+    // Update events section meta (count of upcoming)
+    const metaEl = document.getElementById('events-section-meta');
+    if (metaEl) {
+        const futureCount = filtered.filter(e => new Date(e.date) >= new Date()).length;
+        metaEl.textContent = futureCount === 0
+            ? 'No upcoming events'
+            : `${futureCount} upcoming event${futureCount === 1 ? '' : 's'}`;
+    }
+
+    if (filtered.length === 0) {
+        eventsList.innerHTML = '<p class="no-events">No events to show.</p>';
         return;
     }
 
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    let insertedTodayDivider = false;
+    const pieces = [];
+
+    if (currentRange === 'all' && hasMoreOlder) {
+        pieces.push(`<div class="load-earlier-wrap"><button class="load-earlier-btn"><span aria-hidden="true">↑</span> Load earlier events</button></div>`);
+    }
+
+    filtered.forEach((event, idx) => {
+        const eventDate = new Date(event.date);
+        const isPast = eventDate < now;
+        const isToday = eventDate >= today && eventDate < new Date(today.getTime() + 86400000);
+
+        // Insert today divider between last past and first future event (all range)
+        if (currentRange === 'all' && !insertedTodayDivider && !isPast) {
+            pieces.push(`<div class="today-divider" id="today-marker"><span class="today-divider-label">Today · ${new Date().toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' })}</span></div>`);
+            insertedTodayDivider = true;
+        }
+
+        pieces.push(renderEventCard(event, { isPast, isToday }));
+    });
+
+    // If range=all and the divider wasn't inserted (all events are in past),
+    // append it at the end to anchor "now"
+    if (currentRange === 'all' && !insertedTodayDivider) {
+        pieces.push(`<div class="today-divider" id="today-marker"><span class="today-divider-label">Today · ${new Date().toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' })}</span></div>`);
+    }
+
+    eventsList.innerHTML = pieces.join('');
+
+    // Wire up load-earlier
+    const loadBtn = eventsList.querySelector('.load-earlier-btn');
+    if (loadBtn) loadBtn.addEventListener('click', loadOlderEvents);
+
+    // Anchor scroll to today divider on initial 'all' load
+    if (options.scrollToToday) {
+        const marker = document.getElementById('today-marker');
+        if (marker) {
+            requestAnimationFrame(() => {
+                marker.scrollIntoView({ behavior: 'auto', block: 'start' });
+            });
+        }
+    }
+}
+
+function renderEventCard(event, { isPast, isToday }) {
+    const eventDate = new Date(event.date);
+    const dayNum = String(eventDate.getDate()).padStart(2, '0');
+    const monthAbbr = eventDate.toLocaleDateString('en-US', { month: 'short' });
+    const timeStr = eventDate.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit', hour12: false });
+
+    const sanitizedEventId = escapeAttribute(event.id);
+    const sanitizedTitle = escapeHtml(event.title);
+    const descriptionText = typeof event.description === 'string' ? event.description : '';
+    const sanitizedDescription = escapeHtml(descriptionText).replace(/\n/g, '<br>');
+    const locationText = typeof event.location === 'string' ? event.location : '';
+    const sanitizedLocation = escapeHtml(locationText);
+    const eventLink = extractEventLink(descriptionText);
+
+    const attendeesList = Array.isArray(event.attendees) ? event.attendees.map(escapeHtml) : [];
+    const attendeesAttr = escapeAttribute(attendeesList.join('\n'));
+    const attendingCount = event.attendingCount || 0;
+    const hasLimit = event.attendance_limit !== null && event.attendance_limit !== undefined;
+    const isFull = hasLimit && attendingCount >= event.attendance_limit;
+    const fillPct = hasLimit ? Math.min(100, Math.round((attendingCount / event.attendance_limit) * 100)) : 0;
+
+    // Chip: status based on fill / past
+    let chipHtml = '';
+    if (isPast) {
+        chipHtml = `<span class="chip"><span class="dot" style="background: var(--text-muted);"></span>Ended</span>`;
+    } else if (isFull) {
+        chipHtml = `<span class="chip danger"><span class="dot"></span>Full</span>`;
+    } else if (hasLimit && fillPct >= 66) {
+        chipHtml = `<span class="chip accent"><span class="dot"></span>Filling up</span>`;
+    } else if (hasLimit) {
+        chipHtml = `<span class="chip"><span class="dot"></span>Open</span>`;
+    }
+
+    const attendanceLabel = hasLimit
+        ? `${attendingCount} / ${event.attendance_limit} going`
+        : `${attendingCount} going`;
+
+    // Side: attend-meter (bar + count) + rsvp-controls. Past events show "N attended" only.
+    let sideContent;
+    if (isPast) {
+        sideContent = `
+            <div class="attend-meter">
+                <span class="attendance-count"><span class="num">${attendingCount}</span> attended</span>
+            </div>
+        `;
+    } else {
+        const barHtml = hasLimit
+            ? `<div class="attend-bar"><span style="width: ${fillPct}%;"></span></div>`
+            : '';
+        const countHtml = hasLimit
+            ? `<span><span class="num">${attendingCount}</span> / ${event.attendance_limit}</span>`
+            : `<span><span class="num">${attendingCount}</span> going</span>`;
+        sideContent = `
+            <div class="attend-meter ${isFull ? 'full' : ''}">
+                ${barHtml}
+                <span class="attendance-count" title="${attendeesAttr}" tabindex="0" role="button" aria-label="${escapeHtml(attendanceLabel)}. View attendees.">
+                    ${countHtml}
+                </span>
+            </div>
+            <div class="rsvp-controls">
+                <button type="button" class="rsvp-trigger-remove" data-event-id="${sanitizedEventId}" ${attendingCount === 0 ? 'disabled' : ''} aria-label="Remove RSVP" title="Cancel RSVP">−</button>
+                <button type="button" class="primary rsvp-trigger-add" data-event-id="${sanitizedEventId}" ${isFull ? 'disabled' : ''} aria-label="RSVP" title="RSVP">＋</button>
+            </div>
+        `;
+    }
+
+    const metaParts = [];
+    if (locationText) metaParts.push(`<span>📍 ${sanitizedLocation}</span>`);
+    if (eventLink) metaParts.push(`<span>🔗 <a href="${escapeAttribute(eventLink)}" target="_blank" rel="noopener noreferrer">Link</a></span>`);
+    if (chipHtml) metaParts.push(chipHtml);
+    const metaHtml = metaParts.join('');
+
+    const classes = ['event-card'];
+    if (isPast) classes.push('past');
+    if (isToday) classes.push('today');
+
+    return `
+        <article class="${classes.join(' ')}" data-event-id="${sanitizedEventId}">
+            <div class="event-date-block">
+                <div class="month">${escapeHtml(monthAbbr)}</div>
+                <div class="day">${dayNum}</div>
+                <div class="time">${escapeHtml(timeStr)}</div>
+            </div>
+            <div class="event-body">
+                <h3>${sanitizedTitle}</h3>
+                <div class="event-meta meta">${metaHtml}</div>
+                ${descriptionText ? `
+                    <p class="event-description event-desc">${sanitizedDescription}</p>
+                    ${descriptionText.length > 180 ? `<button type="button" class="event-desc-toggle" aria-expanded="false">Show more</button>` : ''}
+                ` : ''}
+            </div>
+            <div class="event-side">
+                ${sideContent}
+            </div>
+        </article>
+    `;
+}
+
+// ---------- RSVP modals ----------
+function openRsvpModal(eventId) {
+    const event = currentEvents.find(e => e.id === eventId);
+    if (!event) return;
     currentEventForRsvp = event;
-
-    // Show modal immediately
-    console.log('Add Modal: Removing hidden class');
     rsvpModal.classList.remove('hidden');
-
-    // Populate content after a short delay to allow rendering
-    setTimeout(() => {
-        console.log('Add Modal: setTimeout callback executing');
-        document.getElementById('modal-event-title').textContent = event.title;
-        document.getElementById('modal-event-date').textContent = new Date(event.date).toLocaleDateString('en-US', {
-            weekday: 'long',
-            year: 'numeric',
-            month: 'long',
-            day: 'numeric',
-            hour: '2-digit',
-            minute: '2-digit'
-        });
-        const modalDescription = typeof event.description === 'string' ? event.description : '';
-        document.getElementById('modal-event-description').innerHTML = escapeHtml(modalDescription).replace(/\n/g, '<br>');
-    }, 10); // A small delay is enough
+    document.getElementById('modal-event-title').textContent = event.title;
+    document.getElementById('modal-event-date').textContent = new Date(event.date).toLocaleDateString('en-US', {
+        weekday: 'long', year: 'numeric', month: 'long', day: 'numeric',
+        hour: '2-digit', minute: '2-digit'
+    });
+    const desc = typeof event.description === 'string' ? event.description : '';
+    document.getElementById('modal-event-description').innerHTML = escapeHtml(desc).replace(/\n/g, '<br>');
+    setTimeout(() => { document.getElementById('attendee-name').focus(); }, 50);
 }
 
 function closeRsvpModal() {
@@ -685,43 +698,24 @@ function closeRsvpModal() {
 }
 
 function openRemoveRsvpModal(eventId) {
-    console.log('openRemoveRsvpModal started for event:', eventId);
     const event = currentEvents.find(e => e.id === eventId);
-    if (!event) {
-        console.error('Remove Modal: Event not found!');
-        return;
-    }
-
+    if (!event) return;
     currentEventForRsvp = event;
-
-    // Show modal immediately
-    console.log('Remove Modal: Removing hidden class');
-    document.getElementById('remove-rsvp-modal').classList.remove('hidden');
-
-    // Populate content after a short delay to allow rendering
-    setTimeout(() => {
-        console.log('Remove Modal: setTimeout callback executing');
-        document.getElementById('remove-modal-event-title').textContent = event.title;
-        document.getElementById('remove-modal-event-date').textContent = new Date(event.date).toLocaleDateString('en-US', {
-            weekday: 'long',
-            year: 'numeric',
-            month: 'long',
-            day: 'numeric',
-            hour: '2-digit',
-            minute: '2-digit'
-        });
-
-        // Populate dropdown with attendees
-        const attendeeSelector = document.getElementById('attendee-to-remove');
-        attendeeSelector.innerHTML = '';
-
-        event.attendees.forEach(attendee => {
-            const option = document.createElement('option');
-            option.value = attendee;
-            option.textContent = attendee;
-            attendeeSelector.appendChild(option);
-        });
-    }, 10); // A small delay is enough
+    const modal = document.getElementById('remove-rsvp-modal');
+    modal.classList.remove('hidden');
+    document.getElementById('remove-modal-event-title').textContent = event.title;
+    document.getElementById('remove-modal-event-date').textContent = new Date(event.date).toLocaleDateString('en-US', {
+        weekday: 'long', year: 'numeric', month: 'long', day: 'numeric',
+        hour: '2-digit', minute: '2-digit'
+    });
+    const selector = document.getElementById('attendee-to-remove');
+    selector.innerHTML = '';
+    (event.attendees || []).forEach(name => {
+        const option = document.createElement('option');
+        option.value = name;
+        option.textContent = name;
+        selector.appendChild(option);
+    });
 }
 
 function closeRemoveRsvpModal() {
@@ -729,393 +723,261 @@ function closeRemoveRsvpModal() {
     currentEventForRsvp = null;
 }
 
-function submitRemoveRsvp() {
+function submitRsvp(action) {
     if (!currentEventForRsvp) {
-        showToast('No event selected for RSVP', 'error');
+        showToast('No event selected', 'error');
         return;
     }
-
-    const attendeeName = document.getElementById('attendee-to-remove').value;
-    const rsvpData = {
-        eventId: currentEventForRsvp.id,
-        action: 'remove',
-        attendeeName: attendeeName
-    };
-
-    // Disable button during API call
-    const submitBtn = document.querySelector('.rsvp-remove-btn');
-    const originalText = submitBtn.querySelector('.text').textContent;
+    const attendeeName = document.getElementById('attendee-name').value.trim();
+    if (!attendeeName) {
+        showToast('Please enter your name', 'error');
+        return;
+    }
+    const submitBtn = document.querySelector('.rsvp-add-btn');
+    const textEl = submitBtn.querySelector('.text');
+    const originalText = textEl.textContent;
     submitBtn.disabled = true;
-    submitBtn.querySelector('.text').textContent = 'Removing...';
+    textEl.textContent = 'Submitting...';
 
-    // Submit RSVP to server
     fetch(`${API_BASE_URL}/api/rsvp`, {
         method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(rsvpData)
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ eventId: currentEventForRsvp.id, action, attendeeName })
     })
-    .then(response => response.json())
+    .then(res => res.json())
     .then(result => {
         submitBtn.disabled = false;
-        submitBtn.querySelector('.text').textContent = originalText;
-
+        textEl.textContent = originalText;
         if (result.success) {
-            // Haptic feedback if supported
-            if (navigator.vibrate) {
-                navigator.vibrate(50);
-            }
+            if (navigator.vibrate) navigator.vibrate(30);
+            closeRsvpModal();
+            showToast('RSVP confirmed', 'success');
+        } else {
+            showToast(result.message || 'Error submitting RSVP', 'error');
+        }
+    })
+    .catch(err => {
+        console.error('RSVP error:', err);
+        submitBtn.disabled = false;
+        textEl.textContent = originalText;
+        showToast('Connection error — please try again', 'error');
+    });
+}
 
+function submitRemoveRsvp() {
+    if (!currentEventForRsvp) return;
+    const attendeeName = document.getElementById('attendee-to-remove').value;
+    const submitBtn = document.querySelector('.rsvp-remove-btn');
+    const textEl = submitBtn.querySelector('.text');
+    const originalText = textEl.textContent;
+    submitBtn.disabled = true;
+    textEl.textContent = 'Removing...';
+
+    fetch(`${API_BASE_URL}/api/rsvp`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ eventId: currentEventForRsvp.id, action: 'remove', attendeeName })
+    })
+    .then(res => res.json())
+    .then(result => {
+        submitBtn.disabled = false;
+        textEl.textContent = originalText;
+        if (result.success) {
             closeRemoveRsvpModal();
             showToast('RSVP removed', 'success');
         } else {
             showToast(result.message || 'Error removing RSVP', 'error');
-            submitBtn.classList.add('shake');
-            setTimeout(() => submitBtn.classList.remove('shake'), 300);
         }
     })
-    .catch(error => {
-        console.error('Error submitting RSVP:', error);
+    .catch(err => {
+        console.error('Remove RSVP error:', err);
         submitBtn.disabled = false;
-        submitBtn.querySelector('.text').textContent = originalText;
-        showToast('Connection error - please try again', 'error');
+        textEl.textContent = originalText;
+        showToast('Connection error — please try again', 'error');
     });
 }
 
-// Mobile tooltip for attendee list
-let activeAttendeeTooltip = null;
-
-function createAttendeeTooltip(attendanceInfo) {
-    // Remove existing tooltip if any
+// ---------- Attendee tooltip (mobile) ----------
+let activeTooltip = null;
+function showAttendeeTooltip(target) {
     removeAttendeeTooltip();
-
-    const attendeeNames = attendanceInfo.getAttribute('title');
-    if (!attendeeNames || attendeeNames.trim() === '') {
-        return null;
-    }
-
-    // Create tooltip element
+    const names = target.getAttribute('title');
+    if (!names || !names.trim()) return;
     const tooltip = document.createElement('div');
     tooltip.className = 'attendee-tooltip';
     tooltip.setAttribute('role', 'tooltip');
-
-    // Create scrollable content area
-    const content = document.createElement('div');
-    content.className = 'attendee-tooltip-content';
-    content.textContent = attendeeNames;
-    tooltip.appendChild(content);
-
-    // Create close button
-    const closeBtn = document.createElement('button');
-    closeBtn.className = 'attendee-tooltip-close';
-    closeBtn.innerHTML = '&times;';
-    closeBtn.setAttribute('aria-label', 'Close');
-    closeBtn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        removeAttendeeTooltip();
+    const list = document.createElement('ul');
+    names.split('\n').forEach(name => {
+        const li = document.createElement('li');
+        li.textContent = name;
+        list.appendChild(li);
     });
-    tooltip.appendChild(closeBtn);
-
+    tooltip.appendChild(list);
     document.body.appendChild(tooltip);
-
-    // Position tooltip within viewport
-    positionTooltipInViewport(tooltip, attendanceInfo);
-
-    // Show with animation
-    requestAnimationFrame(() => {
-        tooltip.classList.add('show');
-    });
-
-    activeAttendeeTooltip = tooltip;
-    return tooltip;
-}
-
-function positionTooltipInViewport(tooltip, targetElement) {
-    const rect = targetElement.getBoundingClientRect();
-    const tooltipRect = tooltip.getBoundingClientRect();
-    const viewportHeight = window.innerHeight;
-    const viewportWidth = window.innerWidth;
-    const padding = 12;
-
-    // Calculate available space above and below
-    const spaceAbove = rect.top;
-    const spaceBelow = viewportHeight - rect.bottom;
-
-    // Default: position above the element
-    let top = rect.top - tooltipRect.height - padding;
-
-    // If not enough space above, position below
-    if (spaceAbove < tooltipRect.height + padding && spaceBelow > spaceAbove) {
-        top = rect.bottom + padding;
-    }
-
-    // Ensure tooltip doesn't go above viewport
-    if (top < padding) {
-        top = padding;
-    }
-
-    // Ensure tooltip doesn't go below viewport
-    if (top + tooltipRect.height > viewportHeight - padding) {
-        top = viewportHeight - tooltipRect.height - padding;
-    }
-
-    // Horizontal positioning: align with element, but keep within viewport
+    const rect = target.getBoundingClientRect();
+    const tipRect = tooltip.getBoundingClientRect();
+    let top = rect.top - tipRect.height - 8 + window.scrollY;
+    if (top < window.scrollY + 8) top = rect.bottom + 8 + window.scrollY;
     let left = rect.left;
-    if (left + tooltipRect.width > viewportWidth - padding) {
-        left = viewportWidth - tooltipRect.width - padding;
+    if (left + tipRect.width > window.innerWidth - 8) {
+        left = window.innerWidth - tipRect.width - 8;
     }
-    if (left < padding) {
-        left = padding;
-    }
-
+    if (left < 8) left = 8;
     tooltip.style.top = `${top}px`;
     tooltip.style.left = `${left}px`;
+    tooltip._owner = target;
+    activeTooltip = tooltip;
 }
-
 function removeAttendeeTooltip() {
-    if (activeAttendeeTooltip) {
-        activeAttendeeTooltip.classList.remove('show');
-        setTimeout(() => {
-            if (activeAttendeeTooltip && activeAttendeeTooltip.parentNode) {
-                activeAttendeeTooltip.parentNode.removeChild(activeAttendeeTooltip);
-            }
-            activeAttendeeTooltip = null;
-        }, 200);
+    if (activeTooltip) {
+        activeTooltip.remove();
+        activeTooltip = null;
     }
 }
 
+// ---------- Event delegation ----------
 function setupEventListeners() {
-    // Mobile attendee tooltip handler
+    // Event card interactions
     eventsList.addEventListener('click', (e) => {
-        const attendanceInfo = e.target.closest('.attendance-info');
-        if (attendanceInfo && TABLET_VIEW_QUERY.matches) {
-            e.preventDefault();
+        // Expand/collapse long descriptions
+        const toggle = e.target.closest('.event-desc-toggle');
+        if (toggle) {
+            const card = toggle.closest('.event-card');
+            if (card) {
+                const expanded = card.classList.toggle('expanded');
+                toggle.textContent = expanded ? 'Show less' : 'Show more';
+                toggle.setAttribute('aria-expanded', expanded ? 'true' : 'false');
+            }
+            return;
+        }
+
+        // Attendee list tooltip — toggle on click (works on desktop + mobile)
+        const attendanceCount = e.target.closest('.attendance-count');
+        if (attendanceCount) {
             e.stopPropagation();
-            createAttendeeTooltip(attendanceInfo);
+            if (activeTooltip && activeTooltip._owner === attendanceCount) {
+                removeAttendeeTooltip();
+            } else {
+                showAttendeeTooltip(attendanceCount);
+            }
             return;
         }
 
-        const btn = e.target.closest('.rsvp-add-btn-small, .rsvp-remove-btn-small');
-        if (!btn) return;
-
-        const eventId = btn.dataset.eventId;
-        const action = btn.dataset.action;
-
-        if (!eventId || !action) return;
-
-        const event = currentEvents.find(e => e.id === eventId);
-        if (!event) return;
-
-        const eventDate = new Date(event.date);
-        const now = new Date();
-        if (eventDate < now) {
-            alert('Cannot RSVP for past events');
-            return;
-        }
-
-        if (action === 'add') {
+        const addBtn = e.target.closest('.rsvp-trigger-add');
+        if (addBtn) {
+            const eventId = addBtn.dataset.eventId;
+            const ev = currentEvents.find(x => x.id === eventId);
+            if (!ev) return;
+            if (new Date(ev.date) < new Date()) {
+                showToast('Past event — RSVP closed', 'error');
+                return;
+            }
             openRsvpModal(eventId);
-        } else if (action === 'remove') {
+            return;
+        }
+
+        const removeBtn = e.target.closest('.rsvp-trigger-remove');
+        if (removeBtn) {
+            const eventId = removeBtn.dataset.eventId;
+            const ev = currentEvents.find(x => x.id === eventId);
+            if (!ev) return;
             openRemoveRsvpModal(eventId);
+            return;
         }
     });
 
-    // Close tooltip when clicking outside
     document.addEventListener('click', (e) => {
-        if (activeAttendeeTooltip && !e.target.closest('.attendance-info') && !e.target.closest('.attendee-tooltip')) {
+        if (activeTooltip && !e.target.closest('.attendance-count') && !e.target.closest('.attendee-tooltip')) {
             removeAttendeeTooltip();
         }
     });
 
-    // Close tooltip on escape key
+    // Desktop hover tooltip for attendee names (skip on coarse pointers / touch)
+    const isHoverCapable = window.matchMedia('(hover: hover) and (pointer: fine)').matches;
+    if (isHoverCapable) {
+        eventsList.addEventListener('mouseover', (e) => {
+            const target = e.target.closest('.attendance-count');
+            if (!target) return;
+            if (activeTooltip && activeTooltip._owner === target) return;
+            showAttendeeTooltip(target);
+        });
+        eventsList.addEventListener('mouseout', (e) => {
+            const target = e.target.closest('.attendance-count');
+            if (!target) return;
+            const to = e.relatedTarget;
+            // Don't close if moving into the tooltip itself
+            if (to && (to.closest && to.closest('.attendee-tooltip'))) return;
+            removeAttendeeTooltip();
+        });
+    }
     document.addEventListener('keydown', (e) => {
-        if (e.key === 'Escape' && activeAttendeeTooltip) {
+        if (e.key === 'Escape') {
             removeAttendeeTooltip();
+            if (!rsvpModal.classList.contains('hidden')) closeRsvpModal();
+            const rm = document.getElementById('remove-rsvp-modal');
+            if (rm && !rm.classList.contains('hidden')) closeRemoveRsvpModal();
         }
     });
 
-    // Close modal when clicking outside
-    rsvpModal.addEventListener('click', function(e) {
-        if (e.target === rsvpModal) {
-            closeRsvpModal();
-        }
+    // Modal backdrop click
+    rsvpModal.addEventListener('click', (e) => {
+        if (e.target === rsvpModal) closeRsvpModal();
     });
+    const removeModal = document.getElementById('remove-rsvp-modal');
+    if (removeModal) {
+        removeModal.addEventListener('click', (e) => {
+            if (e.target === removeModal) closeRemoveRsvpModal();
+        });
+    }
 
     // Refresh button
     const refreshBtn = document.getElementById('refresh-events-btn');
-    if (refreshBtn) {
-        refreshBtn.addEventListener('click', debounce(loadEvents, 250));
-    }
+    if (refreshBtn) refreshBtn.addEventListener('click', debounce(loadEvents, 250));
 
-    // Donate button
+    // Donate
     const donateBtn = document.getElementById('donate-btn');
-    if (donateBtn) {
-        donateBtn.addEventListener('click', donate);
-    }
+    if (donateBtn) donateBtn.addEventListener('click', donate);
 
-    const reportIssueBtn = document.getElementById('report-issue-btn');
-    if (reportIssueBtn) {
-        reportIssueBtn.addEventListener('click', () => {
-            window.open('https://docs.google.com/forms/d/e/1FAIpQLScEcmD-j6pd9U9q323nQT5xMf2G8AW2X4GkUAlGOr89ZlNwGg/viewform?embedded=true', '_blank');
-        });
-    }
 }
 
+// ---------- WebSocket ----------
+function setupWebSocket() {
+    const wsProtocol = window.location.protocol === 'https:' ? 'wss' : 'ws';
+    const wsUrl = `${wsProtocol}://${window.location.host}`;
+    const ws = new WebSocket(wsUrl);
+
+    ws.onmessage = (message) => {
+        try {
+            const data = JSON.parse(message.data);
+            if (data.type === 'attendance_update') {
+                const { eventId, attendingCount, attendees } = data.payload;
+                const idx = currentEvents.findIndex(e => e.id === eventId);
+                if (idx !== -1) {
+                    currentEvents[idx].attendingCount = attendingCount;
+                    currentEvents[idx].attendees = attendees;
+                    displayEvents();
+                }
+            }
+        } catch (err) {
+            console.error('WebSocket message error:', err);
+        }
+    };
+    ws.onclose = () => setTimeout(setupWebSocket, 5000);
+    ws.onerror = (err) => console.error('WebSocket error:', err);
+}
+
+// ---------- Donate ----------
 async function donate() {
     try {
         const keyResponse = await fetch(`${API_BASE_URL}/api/stripe-key`);
         const { publicKey } = await keyResponse.json();
-        const stripe = Stripe(publicKey);
-
-        const response = await fetch(`${API_BASE_URL}/api/create-donation-checkout-session`, {
-            method: 'POST',
-        });
+        const stripe = window.Stripe(publicKey);
+        const response = await fetch(`${API_BASE_URL}/api/create-donation-checkout-session`, { method: 'POST' });
         const session = await response.json();
-        const result = await stripe.redirectToCheckout({
-            sessionId: session.id,
-        });
-
-        if (result.error) {
-            alert(result.error.message);
-        }
-    } catch (error) {
-        console.error('Error creating checkout session:', error);
+        const result = await stripe.redirectToCheckout({ sessionId: session.id });
+        if (result.error) alert(result.error.message);
+    } catch (err) {
+        console.error('Donate error:', err);
         alert('Error creating checkout session. Please try again.');
     }
-}
-
-
-
-function submitRsvp(action) {
-    if (!currentEventForRsvp) {
-        showToast('No event selected for RSVP', 'error');
-        return;
-    }
-
-    const attendeeName = document.getElementById('attendee-name').value.trim();
-    if (!attendeeName) {
-        showToast('Please enter your name', 'error');
-        const input = document.getElementById('attendee-name');
-        input.classList.add('shake');
-        setTimeout(() => input.classList.remove('shake'), 300);
-        return;
-    }
-
-    const rsvpData = {
-        eventId: currentEventForRsvp.id,
-        action: action,
-        attendeeName: attendeeName
-    };
-
-    // Disable button during API call
-    const submitBtn = document.querySelector('.rsvp-add-btn');
-    const originalText = submitBtn.querySelector('.text').textContent;
-    submitBtn.disabled = true;
-    submitBtn.querySelector('.text').textContent = 'Submitting...';
-
-    // Submit RSVP to server
-    fetch(`${API_BASE_URL}/api/rsvp`, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(rsvpData)
-    })
-    .then(response => response.json())
-    .then(result => {
-        submitBtn.disabled = false;
-        submitBtn.querySelector('.text').textContent = originalText;
-
-        if (result.success) {
-            // Haptic feedback if supported
-            if (navigator.vibrate) {
-                navigator.vibrate(50);
-            }
-
-            closeRsvpModal();
-            showToast('RSVP confirmed!', 'success');
-        } else {
-            // Error feedback
-            showToast(result.message || 'Error submitting RSVP', 'error');
-            submitBtn.classList.add('shake');
-            setTimeout(() => submitBtn.classList.remove('shake'), 300);
-        }
-    })
-    .catch(error => {
-        console.error('Error submitting RSVP:', error);
-        submitBtn.disabled = false;
-        submitBtn.querySelector('.text').textContent = originalText;
-        showToast('Connection error - please try again', 'error');
-    });
-}
-
-
-
-
-
-
-
-async function loadDonationBalance() {
-    try {
-        const response = await fetch(`${API_BASE_URL}/api/donations?limit=1`);
-        const data = await response.json();
-        updateDonationButton(data.balance);
-    } catch (error) {
-        console.error('Error loading donation balance:', error);
-        // Keep default emoji on error
-    }
-}
-
-function updateDonationButton(balance) {
-    const donationBtn = document.getElementById('donation-btn');
-    if (!donationBtn) return;
-    
-    // Update emoji based on balance
-    if (balance > 0) {
-        donationBtn.textContent = '🤗';
-        donationBtn.classList.add('positive');
-        donationBtn.classList.remove('negative');
-    } else if (balance < 0) {
-        donationBtn.textContent = '😰';
-        donationBtn.classList.add('negative');
-        donationBtn.classList.remove('positive');
-    } else {
-        donationBtn.textContent = '🤗';
-        donationBtn.classList.remove('positive', 'negative');
-    }
-    
-    // Calculate gradient background based on balance
-    // Range: -100 (red) to +100 (green), with white at 0
-    const minRange = -100;
-    const maxRange = 100;
-    const clampedBalance = Math.max(minRange, Math.min(maxRange, balance));
-    
-    // Normalize balance to 0-1 range (0 = min, 1 = max)
-    const normalized = (clampedBalance - minRange) / (maxRange - minRange);
-    
-    // Interpolate colors: red -> white -> green
-    // Red: #ef4444 at -100 (rgb(239, 68, 68))
-    // White: #ffffff at 0 (rgb(255, 255, 255))
-    // Green: #10b981 at +100 (rgb(16, 185, 129))
-    let red, green, blue;
-    
-    if (normalized < 0.5) {
-        // Interpolate between red and white
-        const t = normalized * 2; // 0 to 1
-        red = Math.round(239 + (255 - 239) * t);   // 239 -> 255
-        green = Math.round(68 + (255 - 68) * t);   // 68 -> 255
-        blue = Math.round(68 + (255 - 68) * t);    // 68 -> 255
-    } else {
-        // Interpolate between white and green
-        const t = (normalized - 0.5) * 2; // 0 to 1
-        red = Math.round(255 + (16 - 255) * t);    // 255 -> 16
-        green = Math.round(255 + (185 - 255) * t); // 255 -> 185
-        blue = Math.round(255 + (129 - 255) * t);  // 255 -> 129
-    }
-    
-    const gradientColor = `rgb(${red}, ${green}, ${blue})`;
-    
-    // Apply gradient background to donation button
-    donationBtn.style.background = `linear-gradient(135deg, ${gradientColor} 0%, ${gradientColor} 100%)`;
 }

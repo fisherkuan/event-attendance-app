@@ -9,6 +9,10 @@ When creating implementation plans, improvement analyses, or deployment guides:
 - Use descriptive filenames: `FEATURE_NAME_plan.md`, `IMPROVEMENT_analysis.md`, etc.
 - Reference this directory when looking for existing plans or creating new ones
 
+## Active work: UI redesign
+
+Ongoing work lives on `feature/redesign` in `.worktrees/redesign/`. The redesign adopts the design system defined in `design-mockup.html` (repo root) — treat that file as the visual source of truth. Status and handoff notes: `.plans/REDESIGN_status.md`. The custom month-grid calendar has replaced the Google Calendar iframe; do not revert. The events-list filter must not affect the calendar — the calendar reads from its own `allCalendarEvents` source (`/api/events?timeRange=all`).
+
 ## Development Commands
 
 ### Running the Application
@@ -71,14 +75,15 @@ Vanilla JavaScript with no build step.
 **Client-side features:**
 - WebSocket connection for real-time attendance updates
 - Event cards with RSVP buttons (add/remove attendance)
-- Google Calendar iframe embedding (multiple calendars supported)
+- **Custom month-grid calendar** rendered client-side from `/api/events?timeRange=all` (replaces the old Google Calendar iframe). Implemented in `app.js` (`renderCalendarGrid`, `loadAllCalendarEvents`, `wireCreateEventButtons`).
 - Admin pages for creating/editing events and managing donations
 
 ### Configuration (config/app.json)
 Central configuration file with:
 - `calendars[]` - Array of Google Calendar embed URLs with enable/disable flags
-- `events.autoFetch` - Whether to sync calendar events automatically
+- `events.autoFetch` - Whether to sync calendar events automatically. **Must be `true`** for the custom month grid and events list to populate from Google Calendar.
 - `events.defaultTimeRange` - Default filter ("future", "past", "all")
+- `events.defaultCreateCalendar` - Name of the calendar pre-selected by the "Create event" button. Must match a `calendars[].name`. The button links to `https://calendar.google.com/calendar/render?action=TEMPLATE&src=<calendar-id>`.
 - `rsvp` - RSVP behavior settings
 - `stripe.donationPriceId` - Stripe price ID for donations
 - `stripe.donationProgress` - Current/goal for donation progress bar
@@ -140,7 +145,9 @@ Required in `.env`:
 ## API Endpoints
 
 ### Core Endpoints
-- `GET /api/events` - List all events (query param: `timeRange=future|past|all`)
+- `GET /api/events` - List events. Query params:
+  - `timeRange=future|past|all` (default from `events.defaultTimeRange`)
+  - `before=<ISO>&limit=N` - paginated past-events fetch, newest-first; used by the "Load earlier events" flow on the Home page (`loadOlderEvents` in `app.js`).
 - `GET /api/events/:id` - Get specific event
 - `POST /api/events` - Create event (admin)
 - `PUT /api/events/:id` - Update event (admin)

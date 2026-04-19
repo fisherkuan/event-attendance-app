@@ -23,12 +23,33 @@ function debounce(func, wait, immediate) {
     };
 }
 
+const BALANCE_BAR_RANGE = 100; // euros on each side of zero
+
 document.addEventListener('DOMContentLoaded', () => {
     loadDonations();
     setupDonateButton();
-    setupScrollSnapIndicators();
     setupRefreshButton();
 });
+
+function renderBalanceBar(balance) {
+    const fill = document.getElementById('donation-progress-fill');
+    if (!fill) return;
+    const min = document.getElementById('balance-bar-min');
+    const max = document.getElementById('balance-bar-max');
+    if (min) min.textContent = `−€${BALANCE_BAR_RANGE}`;
+    if (max) max.textContent = `+€${BALANCE_BAR_RANGE}`;
+    const clamped = Math.max(-BALANCE_BAR_RANGE, Math.min(BALANCE_BAR_RANGE, balance));
+    const magnitudePct = Math.abs(clamped) / BALANCE_BAR_RANGE * 50;
+    if (clamped >= 0) {
+        fill.style.left = '50%';
+        fill.style.right = 'auto';
+    } else {
+        fill.style.left = 'auto';
+        fill.style.right = '50%';
+    }
+    fill.style.width = `${magnitudePct}%`;
+    fill.classList.toggle('negative', clamped < 0);
+}
 
 function setupRefreshButton() {
     const refreshBtn = document.getElementById('refresh-donations-btn');
@@ -44,6 +65,7 @@ async function loadDonations() {
         
         donationData = data;
         displayBalance(data.balance);
+        renderBalanceBar(data.balance || 0);
         displayDonations(data.donations);
     } catch (error) {
         console.error('Error loading donations:', error);
@@ -85,31 +107,29 @@ function displayDonations(donations) {
     }
     
     const donationsHtml = donations.map(donation => {
-        // Use entry_date if available, otherwise fall back to created_at
         const dateToUse = donation.entry_date || donation.created_at;
         const date = new Date(dateToUse);
         const formattedDate = date.toLocaleDateString('en-US', {
-            year: 'numeric',
-            month: 'short',
-            day: 'numeric',
+            year: 'numeric', month: 'short', day: 'numeric',
         });
-        
+
         const amount = new Intl.NumberFormat('en-US', {
-            style: 'currency',
-            currency: 'EUR',
-            minimumFractionDigits: 2
+            style: 'currency', currency: 'EUR', minimumFractionDigits: 2
         }).format(donation.amount);
-        
+
         const amountClass = donation.amount >= 0 ? 'positive' : 'negative';
-        
+        const signedAmount = donation.amount > 0 ? `+${amount}` : amount;
+        const donatorHtml = donation.donator ? escapeHtml(donation.donator) : 'Anonymous';
+        const descHtml = donation.description ? escapeHtml(donation.description) : '';
+
         return `
             <div class="donation-entry">
-                <div class="donation-entry-header">
-                    <span class="donation-amount ${amountClass}">${amount}</span>
+                <div class="donation-date date">${formattedDate}</div>
+                <div>
+                    <div class="donation-donator donator">${donatorHtml}</div>
+                    ${descHtml ? `<div class="donation-description desc">${descHtml}</div>` : ''}
                 </div>
-                ${donation.donator ? `<div class="donation-donator"><strong>Donator:</strong> ${escapeHtml(donation.donator)}</div>` : ''}
-                ${donation.description ? `<div class="donation-description">${escapeHtml(donation.description)}</div>` : ''}
-                <div class="donation-date">${formattedDate}</div>
+                <div class="donation-amount ${amountClass}">${signedAmount}</div>
             </div>
         `;
     }).join('');

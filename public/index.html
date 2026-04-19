@@ -3,112 +3,162 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Leuven Taiwanese Events</title>
-    <meta name="description" content="Plug into Leuven's Taiwanese community pulse—discover upcoming meetups and RSVP in seconds.">
+    <title>Lilai</title>
+    <meta name="description" content="Discover upcoming meetups and RSVP in seconds.">
     <meta property="og:type" content="website">
-    <meta property="og:title" content="Leuven Taiwanese Events">
-    <meta property="og:description" content="Plug into the community pulse, one meetup at a time.">
+    <meta property="og:title" content="Lilai">
+    <meta property="og:description" content="Discover upcoming meetups and RSVP in seconds.">
     <meta property="og:image" content="/icons/icon-512x512.png">
     <meta property="og:image:width" content="512">
     <meta property="og:image:height" content="512">
     <meta name="twitter:card" content="summary_large_image">
-    <meta name="twitter:title" content="Leuven Taiwanese Events">
-    <meta name="twitter:description" content="Plug into the community pulse, one meetup at a time.">
+    <meta name="twitter:title" content="Lilai">
+    <meta name="twitter:description" content="Discover upcoming meetups and RSVP in seconds.">
     <meta name="twitter:image" content="/icons/icon-512x512.png">
     <link rel="stylesheet" href="styles.css">
     <link rel="manifest" href="manifest.json">
-    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans:wght@300;400;600;700&family=Press+Start+2P&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Fraunces:opsz,wght@9..144,500;9..144,600&display=swap" rel="stylesheet">
     <link rel="icon" href="/icons/favicon.ico" type="image/x-icon">
     <script src="https://js.stripe.com/v3/"></script>
 </head>
 <body>
-<div class="container">
-    <div class="hero">
-        <header class="app-header">
-            <h1 class="app-title">Leuven Taiwanese Events</h1>
-            <p class="app-header-links">
+<div class="container container-wide">
+    <header class="home-header">
+        <div class="home-header-row">
+            <div>
+                <div class="eyebrow">Leuven Taiwanese Community</div>
+                <h1 class="display">Lilai</h1>
+            </div>
+            <nav class="app-header-links" aria-label="Site links">
                 <a href="faq.html">FAQ</a>
-                <span class="app-header-links-separator" aria-hidden="true">|</span>
                 <a href="https://scribehow.com/viewer/How-Tos_Leuven_TW_Events_App__YwcZtJtHSDy8NbjlWa_KgQ" target="_blank" rel="noopener noreferrer">How-To's</a>
-            </p>
-            <p class="header-subtitle" hidden></p>
-        </header>
-    </div>
+                <a href="https://docs.google.com/forms/d/e/1FAIpQLScEcmD-j6pd9U9q323nQT5xMf2G8AW2X4GkUAlGOr89ZlNwGg/viewform?embedded=true" target="_blank" rel="noopener noreferrer">Report Issue</a>
+                <a href="donations.html">Donate</a>
+            </nav>
+            <button type="button" class="menu-toggle" id="menu-toggle" aria-label="Open menu" aria-expanded="false" aria-controls="menu-panel">
+                <span class="menu-bars" aria-hidden="true"><span></span><span></span><span></span></span>
+            </button>
+        </div>
+    </header>
 
-    <div class="scroll-snap-container">
+    <div class="menu-backdrop" id="menu-backdrop" hidden></div>
+    <aside class="menu-panel" id="menu-panel" aria-hidden="true" aria-label="Menu">
+        <div class="menu-panel-header">
+            <span class="menu-panel-title">Menu</span>
+            <button type="button" class="menu-close" id="menu-close" aria-label="Close menu">&times;</button>
+        </div>
+        <nav class="menu-links" aria-label="Site links">
+            <a href="faq.html">FAQ</a>
+            <a href="https://scribehow.com/viewer/How-Tos_Leuven_TW_Events_App__YwcZtJtHSDy8NbjlWa_KgQ" target="_blank" rel="noopener noreferrer">How-To's</a>
+            <a href="https://docs.google.com/forms/d/e/1FAIpQLScEcmD-j6pd9U9q323nQT5xMf2G8AW2X4GkUAlGOr89ZlNwGg/viewform?embedded=true" target="_blank" rel="noopener noreferrer">Report Issue</a>
+            <a href="donations.html">Donate</a>
+        </nav>
+        <div class="menu-divider" aria-hidden="true"></div>
+        <div class="menu-section-title">Calendar</div>
+        <details class="menu-subscribe">
+            <summary>Subscribe</summary>
+            <div class="menu-subscribe-list" id="mobile-add-to-calendar-dropdown"></div>
+        </details>
+        <a href="#" id="mobile-join-group-link" class="menu-link-item">Join group</a>
+    </aside>
+
     <main>
-        <!-- Google Calendar Integration Section -->
-        <section class="calendar-section">
-            <h2><span class="section-emoji" aria-hidden="true">🗓️</span> Calendar</h2>
-            <div class="calendar-actions">
-                <div class="dropdown">
-                    <button class="calendar-action-btn" title="Add to Google Calendar">
-                        <img src="icons/add.png" alt="Add to Google Calendar">
-                    </button>
-                    <div class="dropdown-content" id="add-to-calendar-dropdown">
-                        <!-- Links will be populated dynamically -->
+        <div class="home-layout">
+            <section class="events-section">
+                <!-- Mobile-only quick actions (shown instead of calendar card on mobile) -->
+                <div class="mobile-cal-actions" aria-label="Calendar actions">
+                    <a href="https://calendar.google.com/calendar/u/0/r/eventedit" target="_blank" rel="noopener noreferrer" class="cal-action-pill accent" id="mobile-create-event">+ Create event</a>
+                </div>
+
+                <div class="section-header">
+                    <div>
+                        <h2 class="section-title">Upcoming events</h2>
+                        <div class="section-meta" id="events-section-meta">Loading…</div>
+                    </div>
+                    <div class="actions">
+                        <button type="button" class="btn ghost sm" id="refresh-events-btn" title="Refresh events">↻ Refresh</button>
                     </div>
                 </div>
-                <a href="#" id="join-group-link" class="calendar-action-btn" title="Join group to add events">
-                    <img src="icons/join.png" alt="Join group to add events">
-                </a>
-            </div>
-            <div id="calendar-container" aria-live="polite">
-                <!-- Google Calendar iframe will be inserted here -->
-                <p class="calendar-loading">Loading calendar...</p>
-            </div>
-        </section>
 
-        <!-- Events List Section -->
-        <section class="events-section">
-            <h2><span class="section-emoji" aria-hidden="true">🎉</span> Events <span id="refresh-events-btn" class="refresh-btn" title="Refresh events"></span></h2>
-            <div class="event-filters">
-                <div class="time-range-selector">
-                    <label for="time-range">Show events:</label>
-                    <select id="time-range" onchange="loadEvents()">
-                        <option value="future">Future Events</option>
-                        <option value="past">Past Events</option>
+                <div class="event-filters">
+                    <div class="time-range-selector" role="tablist" aria-label="Event time range">
+                        <button type="button" class="filter-pill active" data-range="future" role="tab" aria-selected="true">Upcoming</button>
+                        <button type="button" class="filter-pill" data-range="all" role="tab" aria-selected="false">All</button>
+                    </div>
+                    <select id="time-range" class="sr-only" aria-hidden="true" tabindex="-1">
+                        <option value="future" selected>Future Events</option>
                         <option value="all">All Events</option>
                     </select>
+                    <span class="filter-divider" aria-hidden="true"></span>
+                    <div class="calendar-filter-container" aria-label="Calendar sources"></div>
                 </div>
-                <div class="calendar-filter-container">
-                    <!-- Content will be populated dynamically by JavaScript -->
+
+                <div id="events-list" class="event-list" aria-live="polite">
+                    <div class="loading">Loading events...</div>
                 </div>
-            </div>
-            <div id="events-list">
-                <!-- Events will be populated dynamically -->
-                <div class="loading">Loading events...</div>
-            </div>
-        </section>
+            </section>
+
+            <aside class="sidebar" aria-label="Sidebar">
+                <div class="calendar-card calendar-section" aria-label="Calendar">
+                    <div class="ch">
+                        <h3>Calendar</h3>
+                        <span class="chip" id="calendar-month-chip"><span class="dot"></span> <span id="calendar-month-label">This month</span></span>
+                    </div>
+                    <div class="cal-action-row">
+                        <a href="https://calendar.google.com/calendar/u/0/r/eventedit" target="_blank" rel="noopener noreferrer" class="btn accent sm cal-create-btn" id="create-event-btn">
+                            <span aria-hidden="true">＋</span> Create event
+                        </a>
+                        <div class="dropdown">
+                            <button type="button" class="btn ghost sm cal-icon-btn" title="Subscribe to calendar" aria-label="Subscribe to calendar">
+                                <span aria-hidden="true">📆</span>
+                            </button>
+                            <div class="dropdown-content" id="add-to-calendar-dropdown"></div>
+                        </div>
+                        <a href="#" id="join-group-link" class="btn ghost sm cal-icon-btn" title="Join group to add events" aria-label="Join group">
+                            <span aria-hidden="true">↗</span>
+                        </a>
+                    </div>
+                    <div id="calendar-container" aria-live="polite">
+                        <p class="calendar-loading">Loading calendar...</p>
+                    </div>
+                </div>
+
+                <div class="card" aria-label="Support">
+                    <div class="eyebrow">Support</div>
+                    <h3 class="h-section" style="font-size: 20px; margin: 8px 0 10px;">Keep this running</h3>
+                    <p style="color: var(--text-secondary); font-size: 14px; margin: 0 0 var(--s-4);">Hosting this app costs money. Donations go directly to operating expenses.</p>
+                    <div class="cta-row">
+                        <a href="donations.html" class="btn accent sm">Donate</a>
+                    </div>
+                </div>
+            </aside>
+        </div>
 
         <!-- RSVP Modal -->
         <div id="rsvp-modal" class="modal hidden">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h3>RSVP for Event</h3>
-                    <button class="close-btn" onclick="closeRsvpModal()">&times;</button>
+                    <h3>RSVP for event</h3>
+                    <button class="close-btn" onclick="closeRsvpModal()" aria-label="Close">&times;</button>
                 </div>
                 <div class="modal-body">
                     <div id="event-details">
-                        <h4 id="modal-event-title">Event Title</h4>
-                        <p id="modal-event-date">Event Date</p>
-                        <p id="modal-event-description">Event Description</p>
+                        <h4 id="modal-event-title">Event title</h4>
+                        <p id="modal-event-date">Event date</p>
+                        <p id="modal-event-description">Event description</p>
                     </div>
-                    
                     <div class="rsvp-actions">
                         <div class="form-group">
-                            <label for="attendee-name">Your Name</label>
-                            <input type="text" id="attendee-name" placeholder="Enter your name">
+                            <label for="attendee-name">Your name</label>
+                            <input type="text" id="attendee-name" class="input" placeholder="Enter your name">
                         </div>
-                        
                         <div class="rsvp-buttons">
                             <button class="rsvp-add-btn" onclick="submitRsvp('add')">
                                 <span class="text">Confirm</span>
                             </button>
                         </div>
-                        
                         <div class="form-actions">
-                            <button type="button" onclick="closeRsvpModal()">Cancel</button>
+                            <button type="button" class="btn ghost" onclick="closeRsvpModal()">Cancel</button>
                         </div>
                     </div>
                 </div>
@@ -120,81 +170,39 @@
             <div class="modal-content">
                 <div class="modal-header">
                     <h3>Remove RSVP</h3>
-                    <button class="close-btn" onclick="closeRemoveRsvpModal()">&times;</button>
+                    <button class="close-btn" onclick="closeRemoveRsvpModal()" aria-label="Close">&times;</button>
                 </div>
                 <div class="modal-body">
                     <div id="event-details">
-                        <h4 id="remove-modal-event-title">Event Title</h4>
-                        <p id="remove-modal-event-date">Event Date</p>
+                        <h4 id="remove-modal-event-title">Event title</h4>
+                        <p id="remove-modal-event-date">Event date</p>
                     </div>
-
                     <div class="rsvp-actions">
                         <div class="form-group">
-                            <label for="attendee-to-remove">Select Attendee to Remove</label>
-                            <select id="attendee-to-remove"></select>
+                            <label for="attendee-to-remove">Select attendee to remove</label>
+                            <select id="attendee-to-remove" class="select"></select>
                         </div>
-
                         <div class="rsvp-buttons">
                             <button class="rsvp-remove-btn" onclick="submitRemoveRsvp()">
                                 <span class="text">Confirm</span>
                             </button>
                         </div>
-
                         <div class="form-actions">
-                            <button type="button" onclick="closeRemoveRsvpModal()">Cancel</button>
+                            <button type="button" class="btn ghost" onclick="closeRemoveRsvpModal()">Cancel</button>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
-
-
     </main>
 
-    <div class="bottom-banner">
+    <footer class="bottom-banner">
         <div class="banner-content">
-            <div class="support-buttons">
-                <button id="donate-btn" class="support-btn">
-                    <img src="icons/one-time-donation.png" alt="Donate" class="btn-icon">
-                    Donate
-                </button>
-                <button id="report-issue-btn" class="support-btn">
-                    <img src="icons/bug.png" alt="Report Issue" class="btn-icon">
-                    Report Issue
-                </button>
-            </div>
-            <div class="support-header">
-                <p class="support-line" data-index="0">Hosting this web app costs money—your support keeps it running.</p>
-                <p class="support-line" data-index="1">All donations go directly to operating expenses.</p>
-            </div>
-            <div style="height: 1.5rem;"></div>
-            <div class="mobile-info-links" aria-label="Helpful resources">
-                <a href="faq.html">FAQ</a>
-                <span class="mobile-info-links-separator" aria-hidden="true">|</span>
-                <a href="https://scribehow.com/viewer/How-Tos_Leuven_TW_Events_App__YwcZtJtHSDy8NbjlWa_KgQ" target="_blank" rel="noopener noreferrer">How-To's</a>
-            </div>
             <p class="copyright">&copy; Built by Fisher Kuan</p>
         </div>
-    </div>
-
-    </div><!-- end scroll-snap-container -->
-
-    <a href="/donations" id="donation-btn" class="instructions-btn donation-btn" aria-label="View donations">💰</a>
-    <!-- First-time swipe hint -->
-    <div id="swipe-hint" class="swipe-hint hidden">
-        <p class="swipe-hint-text">← Swipe to navigate →</p>
-    </div>
-
-    <!-- Page indicators -->
-    <div class="page-indicators">
-        <span class="page-dot active" data-page="0"></span>
-        <span class="page-dot" data-page="1"></span>
-        <span class="page-dot" data-page="2"></span>
-    </div>
+    </footer>
 </div>
 
-
-    <!-- Scripts -->
-    <script src="app.js"></script>
+<script src="app.js"></script>
 </body>
 </html>

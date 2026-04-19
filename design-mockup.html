@@ -1,0 +1,1691 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>UI Redesign — Mockup</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Fraunces:opsz,wght@9..144,500;9..144,600&display=swap" rel="stylesheet">
+<style>
+/* ---------- Design tokens ---------- */
+:root {
+    /* palette */
+    --bg: #fafaf9;
+    --surface: #ffffff;
+    --surface-muted: #f5f5f4;
+    --border: #e7e5e4;
+    --border-strong: #d6d3d1;
+    --text: #1c1917;
+    --text-secondary: #57534e;
+    --text-muted: #a8a29e;
+    --accent: #0f766e;        /* teal-700 */
+    --accent-soft: #ccfbf1;
+    --accent-hover: #115e59;
+    --success: #059669;
+    --danger: #e11d48;
+    --warning: #d97706;
+
+    /* type */
+    --font-sans: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    --font-display: "Fraunces", Georgia, serif;
+
+    /* radius */
+    --r-sm: 6px;
+    --r-md: 10px;
+    --r-lg: 14px;
+    --r-xl: 20px;
+
+    /* shadow */
+    --shadow-xs: 0 1px 2px rgba(28, 25, 23, 0.04);
+    --shadow-sm: 0 1px 2px rgba(28, 25, 23, 0.04), 0 1px 3px rgba(28, 25, 23, 0.04);
+    --shadow-md: 0 1px 2px rgba(28, 25, 23, 0.05), 0 4px 12px rgba(28, 25, 23, 0.06);
+    --shadow-lg: 0 2px 4px rgba(28, 25, 23, 0.04), 0 12px 32px rgba(28, 25, 23, 0.08);
+
+    /* spacing */
+    --s-1: 4px;  --s-2: 8px;  --s-3: 12px; --s-4: 16px;
+    --s-5: 24px; --s-6: 32px; --s-7: 48px; --s-8: 64px;
+}
+
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; }
+body {
+    font-family: var(--font-sans);
+    font-size: 15px;
+    line-height: 1.55;
+    color: var(--text);
+    background: var(--bg);
+    -webkit-font-smoothing: antialiased;
+}
+
+/* ---------- Mockup shell ---------- */
+.mockup-shell {
+    min-height: 100vh;
+}
+.mockup-nav {
+    position: sticky; top: 0; z-index: 50;
+    background: rgba(250, 250, 249, 0.85);
+    backdrop-filter: saturate(180%) blur(12px);
+    -webkit-backdrop-filter: saturate(180%) blur(12px);
+    border-bottom: 1px solid var(--border);
+}
+.mockup-nav-inner {
+    max-width: 1180px; margin: 0 auto;
+    display: flex; align-items: center; gap: var(--s-5);
+    padding: var(--s-3) var(--s-5);
+}
+.mockup-brand {
+    font-family: var(--font-display);
+    font-weight: 600;
+    font-size: 18px;
+    letter-spacing: -0.01em;
+}
+.mockup-brand .dot { color: var(--accent); }
+.mockup-tabs { display: flex; gap: var(--s-1); margin-left: auto; }
+.mockup-tab {
+    appearance: none; border: 0; background: transparent;
+    padding: 8px 14px; border-radius: 999px;
+    font: inherit; font-size: 13px; font-weight: 500;
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s;
+}
+.mockup-tab:hover { background: var(--surface-muted); color: var(--text); }
+.mockup-tab.active {
+    background: var(--text);
+    color: #fff;
+}
+
+/* device toggle */
+.view-toggle {
+    display: inline-flex; background: var(--surface-muted);
+    border-radius: 999px; padding: 3px; gap: 2px;
+    margin-left: var(--s-3);
+}
+.view-toggle button {
+    appearance: none; border: 0; background: transparent;
+    padding: 6px 10px; border-radius: 999px;
+    font: inherit; font-size: 12px; font-weight: 500;
+    color: var(--text-secondary); cursor: pointer;
+}
+.view-toggle button.active { background: var(--surface); color: var(--text); box-shadow: var(--shadow-xs); }
+
+/* when .view-mobile is set on body, wrap each page in a phone frame */
+body.view-mobile .mockup-page { padding: var(--s-6) 0; display: none; }
+body.view-mobile .mockup-page.active { display: flex; justify-content: center; }
+body.view-mobile .phone-frame {
+    width: 390px; max-width: 100%;
+    height: 780px;
+    border: 10px solid #1c1917;
+    border-radius: 40px;
+    overflow: hidden;
+    box-shadow: var(--shadow-lg);
+    background: var(--bg);
+    position: relative;
+    display: flex; flex-direction: column;
+}
+body.view-mobile .phone-frame::before {
+    /* notch */
+    content: ""; position: absolute; top: 8px; left: 50%; transform: translateX(-50%);
+    width: 110px; height: 22px; background: #1c1917; border-radius: 999px; z-index: 10;
+}
+body.view-mobile .phone-scroll {
+    flex: 1; overflow-y: auto; overflow-x: hidden;
+    padding: 36px var(--s-3) var(--s-5);
+}
+/* Mobile: prevent any child from forcing horizontal overflow */
+body.view-mobile .phone-scroll img,
+body.view-mobile .phone-scroll iframe,
+body.view-mobile .phone-scroll pre,
+body.view-mobile .phone-scroll table { max-width: 100%; }
+body.view-mobile .container-wide,
+body.view-mobile .container-narrow,
+body.view-mobile .home-layout,
+body.view-mobile .sidebar,
+body.view-mobile .card,
+body.view-mobile .event-card,
+body.view-mobile .donation-entry,
+body.view-mobile .admin-row,
+body.view-mobile .bottom-support-bar,
+body.view-mobile .faq-item,
+body.view-mobile .faq-answer { max-width: 100%; min-width: 0; }
+body.view-mobile .event-body h3,
+body.view-mobile .event-desc,
+body.view-mobile .admin-row h4,
+body.view-mobile .donation-entry .desc { overflow-wrap: anywhere; word-break: break-word; }
+body.view-mobile .event-filters,
+body.view-mobile .mobile-cal-actions,
+body.view-mobile .admin-controls,
+body.view-mobile .donation-cta-row,
+body.view-mobile .cta-row,
+body.view-mobile .rsvp-controls { flex-wrap: wrap; }
+body.view-mobile input,
+body.view-mobile select,
+body.view-mobile textarea,
+body.view-mobile .input,
+body.view-mobile .select,
+body.view-mobile .textarea { max-width: 100%; }
+body:not(.view-mobile) .phone-frame,
+body:not(.view-mobile) .phone-scroll { display: contents; }
+
+/* inside mobile frame: collapse desktop layouts */
+body.view-mobile .home-layout { grid-template-columns: 1fr !important; }
+body.view-mobile .container-wide,
+body.view-mobile .container-narrow { max-width: 100%; }
+body.view-mobile .home-header nav { font-size: 12px; gap: var(--s-3); width: 100%; order: 2; margin-top: var(--s-2); }
+body.view-mobile .home-header .row { gap: var(--s-2); }
+body.view-mobile .home-tagline { font-size: 13px; }
+body.view-mobile .event-card { grid-template-columns: 56px 1fr; grid-template-areas: "date body" "side side"; }
+body.view-mobile .event-card .event-date-block { grid-area: date; }
+body.view-mobile .event-card .event-body { grid-area: body; }
+body.view-mobile .event-card .event-side { grid-area: side; flex-direction: row; justify-content: space-between; align-items: center; width: 100%; margin-top: 4px; }
+body.view-mobile .donation-entry { grid-template-columns: 1fr auto; grid-template-areas: "who amt" "date date"; }
+body.view-mobile .donation-entry .date { grid-area: date; }
+body.view-mobile .donation-entry > div:nth-child(2) { grid-area: who; }
+body.view-mobile .donation-entry .donation-amount { grid-area: amt; font-size: 16px; }
+body.view-mobile .admin-row { grid-template-columns: 1fr; }
+body.view-mobile .admin-controls { flex-wrap: wrap; }
+body.view-mobile .admin-controls input[type="number"] { flex: 1; }
+body.view-mobile .form-grid.cols-2 { grid-template-columns: 1fr !important; }
+body.view-mobile .admin-header .tabs { flex-wrap: wrap; }
+body.view-mobile .bottom-support-bar { flex-direction: column; align-items: flex-start; }
+body.view-mobile h1.display { font-size: 28px; }
+body.view-mobile .balance-amount { font-size: 56px; }
+
+/* Mobile: hide the calendar card (redundant with events list), show compact actions */
+body.view-mobile .calendar-card { display: none; }
+body.view-mobile .mobile-cal-actions { display: flex; }
+.mobile-cal-actions { display: none; }
+
+/* Desktop: hide mobile action row */
+body:not(.view-mobile) .mobile-cal-actions { display: none; }
+/* but actually use a media query so the real app also gets it on narrow viewports */
+@media (max-width: 959px) {
+    .mobile-cal-actions { display: flex; }
+    .calendar-card { display: none; }
+}
+
+.mobile-cal-actions {
+    gap: var(--s-2);
+    margin-bottom: var(--s-4);
+    flex-wrap: wrap;
+}
+.cal-action-pill {
+    appearance: none; border: 1px solid var(--border);
+    background: var(--surface);
+    padding: 8px 12px;
+    border-radius: 999px;
+    font: inherit; font-size: 13px; font-weight: 500;
+    color: var(--text);
+    cursor: pointer;
+    display: inline-flex; align-items: center; gap: 6px;
+    white-space: nowrap;
+    text-decoration: none;
+    min-width: 0;
+}
+.cal-action-pill:hover { background: var(--surface-muted); }
+.cal-action-pill .ic {
+    width: 16px; height: 16px; display: inline-flex; align-items: center; justify-content: center;
+    color: var(--accent);
+}
+.cal-action-pill.accent {
+    background: var(--accent); color: #fff;
+    border-color: var(--accent);
+}
+.cal-action-pill.accent:hover { background: var(--accent-hover); }
+.cal-action-pill.accent .ic { color: #fff; }
+
+.mockup-page { display: none; padding: var(--s-6) var(--s-4) var(--s-8); }
+.mockup-page.active { display: block; }
+
+/* ---------- Shared primitives ---------- */
+.container-narrow { max-width: 860px; margin: 0 auto; }
+.container-wide   { max-width: 1120px; margin: 0 auto; }
+
+.eyebrow {
+    font-size: 12px; font-weight: 600;
+    letter-spacing: 0.08em; text-transform: uppercase;
+    color: var(--text-muted);
+}
+h1.display {
+    font-family: var(--font-display);
+    font-weight: 500;
+    font-size: clamp(32px, 4vw, 44px);
+    line-height: 1.1;
+    letter-spacing: -0.02em;
+    margin: var(--s-2) 0 var(--s-3);
+    color: var(--text);
+}
+h2.section-title {
+    font-family: var(--font-display);
+    font-weight: 500;
+    font-size: 24px;
+    letter-spacing: -0.01em;
+    margin: 0;
+}
+.section-meta {
+    font-size: 13px; color: var(--text-muted);
+}
+
+/* buttons */
+.btn {
+    appearance: none; border: 1px solid transparent;
+    background: var(--text); color: #fff;
+    padding: 10px 16px;
+    border-radius: var(--r-md);
+    font: inherit; font-size: 14px; font-weight: 500;
+    cursor: pointer;
+    display: inline-flex; align-items: center; gap: 8px;
+    transition: transform 0.08s ease, background 0.15s, border-color 0.15s, color 0.15s;
+}
+.btn:hover { background: #0c0a09; }
+.btn:active { transform: translateY(1px); }
+.btn.ghost {
+    background: transparent; color: var(--text);
+    border-color: var(--border-strong);
+}
+.btn.ghost:hover { background: var(--surface-muted); }
+.btn.accent {
+    background: var(--accent); color: #fff;
+}
+.btn.accent:hover { background: var(--accent-hover); }
+.btn.subtle {
+    background: var(--surface-muted); color: var(--text);
+}
+.btn.subtle:hover { background: #e7e5e4; }
+.btn.sm { padding: 6px 10px; font-size: 13px; }
+.btn.icon {
+    padding: 8px; width: 34px; height: 34px;
+    justify-content: center;
+    background: var(--surface); color: var(--text);
+    border-color: var(--border);
+}
+.btn.icon:hover { background: var(--surface-muted); }
+
+.card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--r-lg);
+    box-shadow: var(--shadow-xs);
+}
+
+.input, .select, .textarea {
+    width: 100%;
+    border: 1px solid var(--border-strong);
+    border-radius: var(--r-md);
+    padding: 10px 12px;
+    font: inherit; font-size: 14px;
+    background: var(--surface);
+    color: var(--text);
+    transition: border-color 0.15s, box-shadow 0.15s;
+}
+.input:focus, .select:focus, .textarea:focus {
+    outline: none;
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(15, 118, 110, 0.14);
+}
+.form-label {
+    display: block;
+    font-size: 13px; font-weight: 500;
+    color: var(--text-secondary);
+    margin-bottom: 6px;
+}
+.form-help {
+    font-size: 12px; color: var(--text-muted);
+    margin-top: 6px;
+}
+
+.divider { height: 1px; background: var(--border); margin: var(--s-6) 0; border: 0; }
+
+/* chips */
+.chip {
+    display: inline-flex; align-items: center; gap: 6px;
+    font-size: 12px; font-weight: 500;
+    padding: 4px 10px;
+    border-radius: 999px;
+    background: var(--surface-muted);
+    color: var(--text-secondary);
+    border: 1px solid var(--border);
+}
+.chip .dot {
+    width: 6px; height: 6px; border-radius: 50%; background: var(--text-muted);
+}
+.chip.accent  { background: var(--accent-soft); color: var(--accent-hover); border-color: transparent; }
+.chip.accent .dot { background: var(--accent); }
+
+/* ========================================================
+   PAGE 1 — HOME / EVENTS
+   ======================================================== */
+
+.home-header {
+    padding-top: var(--s-5);
+    margin-bottom: var(--s-6);
+}
+.home-header .row {
+    display: flex; align-items: baseline; justify-content: space-between;
+    flex-wrap: wrap; gap: var(--s-3);
+}
+.home-header nav {
+    display: flex; gap: var(--s-4);
+    font-size: 14px;
+}
+.home-header nav a {
+    color: var(--text-secondary);
+    text-decoration: none;
+    border-bottom: 1px solid transparent;
+    padding-bottom: 2px;
+    transition: color 0.15s, border-color 0.15s;
+}
+.home-header nav a:hover { color: var(--text); border-color: var(--text); }
+.home-tagline { color: var(--text-secondary); max-width: 540px; margin-top: var(--s-2); font-size: 15px; }
+
+/* Split layout on desktop */
+.home-layout {
+    display: grid; gap: var(--s-6);
+    grid-template-columns: minmax(0, 1fr);
+}
+@media (min-width: 960px) {
+    .home-layout { grid-template-columns: 1.15fr 0.85fr; }
+}
+
+.section-header {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: var(--s-4);
+}
+.section-header .actions { display: flex; gap: var(--s-2); align-items: center; }
+
+.event-filters {
+    display: flex; gap: var(--s-2); flex-wrap: wrap;
+    margin-bottom: var(--s-4);
+}
+.filter-pill {
+    appearance: none; border: 1px solid var(--border);
+    background: var(--surface);
+    padding: 6px 12px;
+    border-radius: 999px;
+    font: inherit; font-size: 13px; color: var(--text-secondary);
+    cursor: pointer;
+}
+.filter-pill.active {
+    background: var(--text); color: #fff; border-color: var(--text);
+}
+.filter-pill:hover:not(.active) { background: var(--surface-muted); color: var(--text); }
+
+.event-list { display: flex; flex-direction: column; gap: var(--s-3); }
+
+/* Timeline markers for "All" view */
+.load-older {
+    display: flex; align-items: center; justify-content: center;
+    gap: 8px;
+    padding: 10px 14px;
+    border: 1px dashed var(--border-strong);
+    border-radius: var(--r-md);
+    background: transparent;
+    color: var(--text-muted);
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    width: 100%;
+    transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+.load-older:hover {
+    background: var(--surface); color: var(--text); border-color: var(--border-strong);
+}
+.load-older.loading { color: var(--text-muted); border-style: solid; }
+.load-older .spinner {
+    width: 12px; height: 12px; border-radius: 50%;
+    border: 2px solid var(--border-strong); border-top-color: var(--accent);
+    animation: spin 0.8s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.today-divider {
+    display: flex; align-items: center; gap: var(--s-3);
+    margin: var(--s-2) 0;
+}
+.today-divider::before,
+.today-divider::after {
+    content: ""; flex: 1; height: 1px; background: var(--border);
+}
+.today-divider .today-label {
+    font-size: 11px; font-weight: 600; letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--accent);
+    padding: 4px 10px;
+    background: var(--accent-soft);
+    border-radius: 999px;
+    white-space: nowrap;
+}
+
+/* Past events are visually de-emphasized but still readable */
+.event-card.past {
+    opacity: 0.82;
+    background: var(--surface-muted);
+}
+.event-card.past:hover { opacity: 1; }
+.event-card.past .event-date-block {
+    background: var(--surface);
+}
+.event-card.past .event-date-block .month { color: var(--text-muted); }
+.event-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--r-lg);
+    padding: var(--s-4) var(--s-5);
+    display: grid;
+    grid-template-columns: 72px 1fr auto;
+    gap: var(--s-4);
+    align-items: start;
+    transition: border-color 0.15s, box-shadow 0.15s, transform 0.15s;
+}
+.event-card:hover {
+    border-color: var(--border-strong);
+    box-shadow: var(--shadow-sm);
+}
+.event-date-block {
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    padding: 10px 0;
+    background: var(--surface-muted);
+    border-radius: var(--r-md);
+    text-align: center;
+}
+.event-date-block .month {
+    font-size: 11px; font-weight: 600; letter-spacing: 0.1em;
+    color: var(--accent);
+    text-transform: uppercase;
+}
+.event-date-block .day {
+    font-family: var(--font-display);
+    font-weight: 500;
+    font-size: 26px;
+    line-height: 1;
+    margin-top: 2px;
+}
+.event-date-block .time {
+    font-size: 11px; color: var(--text-muted); margin-top: 4px;
+}
+.event-body h3 {
+    margin: 0 0 4px;
+    font-size: 16px; font-weight: 600;
+    letter-spacing: -0.01em;
+}
+.event-body .meta {
+    display: flex; flex-wrap: wrap; gap: var(--s-3);
+    font-size: 13px; color: var(--text-muted);
+    margin-bottom: 8px;
+}
+.event-body .meta span { display: inline-flex; align-items: center; gap: 4px; }
+.event-desc {
+    color: var(--text-secondary); font-size: 14px;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+.event-side {
+    display: flex; flex-direction: column; align-items: flex-end; gap: var(--s-2);
+    min-width: 120px;
+}
+.attend-meter {
+    display: flex; align-items: center; gap: 6px;
+    font-size: 13px; color: var(--text-secondary);
+}
+.attend-meter .num { font-weight: 600; color: var(--text); }
+.attend-bar {
+    width: 80px; height: 4px; background: var(--surface-muted);
+    border-radius: 999px; overflow: hidden;
+}
+.attend-bar > span { display: block; height: 100%; background: var(--accent); }
+.rsvp-controls { display: flex; gap: 4px; }
+.rsvp-controls button {
+    width: 30px; height: 30px; border-radius: var(--r-sm);
+    border: 1px solid var(--border);
+    background: var(--surface);
+    cursor: pointer; color: var(--text);
+    font-size: 14px; font-weight: 600;
+    display: inline-flex; align-items: center; justify-content: center;
+}
+.rsvp-controls button:hover { background: var(--surface-muted); }
+.rsvp-controls button.primary {
+    background: var(--text); color: #fff; border-color: var(--text);
+}
+.rsvp-controls button.primary:hover { background: #0c0a09; }
+.rsvp-controls button:disabled {
+    opacity: 0.4; cursor: not-allowed;
+}
+
+@media (max-width: 640px) {
+    .event-card {
+        grid-template-columns: 56px 1fr;
+        grid-template-areas: "date body" "side side";
+    }
+    .event-date-block { grid-area: date; padding: 8px 0; }
+    .event-body { grid-area: body; }
+    .event-side { grid-area: side; flex-direction: row; justify-content: space-between; align-items: center; width: 100%; margin-top: 4px; }
+}
+
+/* sidebar: calendar card */
+.sidebar { display: flex; flex-direction: column; gap: var(--s-5); }
+.calendar-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--r-lg);
+    overflow: hidden;
+    box-shadow: var(--shadow-xs);
+}
+.calendar-card .ch {
+    padding: var(--s-3) var(--s-4);
+    border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: space-between;
+}
+.calendar-card .ch h3 { margin: 0; font-size: 14px; font-weight: 600; }
+/* Calendar preview — month grid (desktop) */
+.calendar-preview {
+    padding: var(--s-3);
+    background: var(--surface);
+}
+.cal-month-head {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0 4px var(--s-2);
+}
+.cal-month-head .mlabel { font-size: 13px; font-weight: 600; letter-spacing: -0.01em; }
+.cal-month-head .arrows { display: flex; gap: 4px; }
+.cal-month-head .arrows button {
+    width: 24px; height: 24px; border-radius: 6px;
+    border: 1px solid var(--border); background: var(--surface);
+    font-size: 12px; line-height: 1; cursor: pointer; color: var(--text-secondary);
+}
+.cal-dow {
+    display: grid; grid-template-columns: repeat(7, 1fr);
+    font-size: 10px; font-weight: 600; letter-spacing: 0.06em;
+    color: var(--text-muted); text-transform: uppercase;
+    padding-bottom: 4px;
+}
+.cal-dow span { text-align: center; }
+.cal-grid {
+    display: grid; grid-template-columns: repeat(7, 1fr);
+    gap: 2px;
+}
+.cal-cell {
+    aspect-ratio: 1 / 0.85;
+    padding: 3px 5px;
+    background: var(--surface-muted);
+    border-radius: 4px;
+    font-size: 10px; color: var(--text-secondary);
+    position: relative;
+    min-height: 38px;
+}
+.cal-cell.out { color: var(--text-muted); opacity: 0.5; }
+.cal-cell.today {
+    background: var(--text); color: #fff; font-weight: 600;
+}
+.cal-cell .ev {
+    display: block;
+    font-size: 9px; font-weight: 500;
+    color: var(--accent-hover);
+    background: var(--accent-soft);
+    border-radius: 3px;
+    padding: 1px 3px;
+    margin-top: 2px;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.cal-cell.today .ev { background: rgba(255,255,255,0.18); color: #fff; }
+
+/* Calendar preview — agenda list (mobile) */
+.cal-agenda {
+    display: none;
+    padding: var(--s-2);
+    background: var(--surface);
+}
+.cal-agenda-day {
+    display: flex; gap: var(--s-3);
+    padding: var(--s-3) var(--s-2);
+    border-bottom: 1px solid var(--border);
+}
+.cal-agenda-day:last-child { border-bottom: 0; }
+.cal-agenda-day .d-block {
+    min-width: 44px;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+}
+.cal-agenda-day .d-block .dow { font-size: 10px; font-weight: 600; letter-spacing: 0.08em; color: var(--text-muted); text-transform: uppercase; }
+.cal-agenda-day .d-block .dnum { font-family: var(--font-display); font-size: 22px; font-weight: 500; letter-spacing: -0.01em; line-height: 1; margin-top: 2px; }
+.cal-agenda-day .d-ev { flex: 1; }
+.cal-agenda-day .d-ev .t { font-size: 11px; color: var(--text-muted); }
+.cal-agenda-day .d-ev .n { font-size: 13px; font-weight: 500; color: var(--text); margin-top: 2px; }
+.cal-agenda-day .d-ev .dot {
+    display: inline-block; width: 6px; height: 6px; border-radius: 50%;
+    background: var(--accent); margin-right: 5px; vertical-align: middle;
+}
+
+/* show agenda in mobile view */
+body.view-mobile .calendar-preview { display: none; }
+body.view-mobile .cal-agenda { display: block; }
+
+.bottom-support-bar {
+    margin-top: var(--s-7);
+    padding: var(--s-5);
+    border: 1px dashed var(--border-strong);
+    border-radius: var(--r-lg);
+    display: flex; align-items: center; justify-content: space-between; gap: var(--s-4);
+    flex-wrap: wrap;
+    background: var(--surface);
+}
+.bottom-support-bar p {
+    margin: 0; color: var(--text-secondary); font-size: 14px;
+    max-width: 520px;
+}
+.bottom-support-bar .cta-row { display: flex; gap: var(--s-2); }
+
+/* ========================================================
+   PAGE 2 — DONATIONS
+   ======================================================== */
+.donations-hero {
+    padding: var(--s-7) 0 var(--s-6);
+    text-align: center;
+}
+.donations-hero .eyebrow { letter-spacing: 0.12em; }
+.balance-amount {
+    font-family: var(--font-display);
+    font-weight: 500;
+    font-size: clamp(56px, 8vw, 88px);
+    line-height: 1;
+    letter-spacing: -0.02em;
+    margin: var(--s-3) 0 var(--s-4);
+    color: var(--text);
+}
+.balance-amount.positive { color: var(--success); }
+.balance-amount.negative { color: var(--danger); }
+
+.progress-wrap { max-width: 520px; margin: 0 auto var(--s-4); }
+.progress-track {
+    height: 6px; background: var(--surface-muted);
+    border-radius: 999px; overflow: hidden;
+    border: 1px solid var(--border);
+}
+.progress-track > span {
+    display: block; height: 100%;
+    background: linear-gradient(90deg, var(--accent) 0%, #14b8a6 100%);
+}
+.progress-meta {
+    display: flex; justify-content: space-between;
+    font-size: 12px; color: var(--text-muted);
+    margin-top: 8px;
+}
+
+.donation-cta-row {
+    display: flex; justify-content: center; gap: var(--s-2);
+    margin-bottom: var(--s-3);
+}
+
+.donations-list {
+    display: flex; flex-direction: column; gap: var(--s-2);
+    margin-top: var(--s-5);
+}
+.donation-entry {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--r-md);
+    padding: var(--s-3) var(--s-4);
+    display: grid;
+    grid-template-columns: 100px 1fr auto;
+    gap: var(--s-4);
+    align-items: center;
+}
+.donation-entry .date {
+    font-size: 12px; color: var(--text-muted);
+}
+.donation-entry .donator { font-weight: 500; }
+.donation-entry .desc { font-size: 13px; color: var(--text-secondary); }
+.donation-amount {
+    font-family: var(--font-display);
+    font-weight: 500;
+    font-size: 18px;
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+}
+.donation-amount.positive { color: var(--success); }
+.donation-amount.negative { color: var(--danger); }
+
+/* ========================================================
+   PAGE 3 — FAQ
+   ======================================================== */
+.faq-hero { padding: var(--s-7) 0 var(--s-5); }
+.faq-back {
+    font-size: 13px; color: var(--text-secondary);
+    text-decoration: none;
+    display: inline-flex; align-items: center; gap: 6px;
+    margin-bottom: var(--s-4);
+}
+.faq-back:hover { color: var(--text); }
+
+.faq-list { display: flex; flex-direction: column; gap: var(--s-2); }
+.faq-item {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--r-md);
+    transition: border-color 0.15s;
+}
+.faq-item[open] { border-color: var(--border-strong); box-shadow: var(--shadow-xs); }
+.faq-item summary {
+    list-style: none;
+    cursor: pointer;
+    padding: var(--s-4) var(--s-5);
+    display: flex; align-items: center; justify-content: space-between;
+    gap: var(--s-3);
+    font-weight: 500;
+    color: var(--text);
+}
+.faq-item summary::-webkit-details-marker { display: none; }
+.faq-item summary::after {
+    content: "+";
+    font-size: 18px; color: var(--text-muted);
+    transition: transform 0.2s;
+}
+.faq-item[open] summary::after { content: "–"; }
+.faq-answer {
+    padding: 0 var(--s-5) var(--s-5);
+    color: var(--text-secondary); font-size: 14px; line-height: 1.65;
+}
+
+/* ========================================================
+   PAGE 4 — ADMIN
+   ======================================================== */
+.admin-header {
+    display: flex; align-items: baseline; justify-content: space-between;
+    margin-bottom: var(--s-5);
+    flex-wrap: wrap; gap: var(--s-3);
+}
+.admin-header h1 {
+    font-family: var(--font-display);
+    font-weight: 500;
+    font-size: 28px;
+    letter-spacing: -0.01em;
+    margin: 0;
+}
+.admin-header .tabs { display: flex; gap: var(--s-1); }
+.admin-header .tabs a {
+    font-size: 13px; color: var(--text-secondary);
+    text-decoration: none;
+    padding: 6px 12px;
+    border-radius: 999px;
+}
+.admin-header .tabs a.active { background: var(--text); color: #fff; }
+
+.admin-row {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--r-md);
+    padding: var(--s-4);
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: var(--s-4);
+    align-items: center;
+    margin-bottom: var(--s-2);
+}
+.admin-row h4 { margin: 0 0 2px; font-size: 15px; font-weight: 600; }
+.admin-row .sub { font-size: 13px; color: var(--text-muted); }
+.admin-controls {
+    display: flex; gap: var(--s-2); align-items: center;
+}
+.admin-controls input[type="number"] {
+    width: 110px;
+}
+
+@media (max-width: 640px) {
+    .admin-row { grid-template-columns: 1fr; }
+    .admin-controls { flex-wrap: wrap; }
+}
+
+.form-grid {
+    display: grid; gap: var(--s-4);
+    grid-template-columns: 1fr;
+}
+@media (min-width: 640px) { .form-grid.cols-2 { grid-template-columns: 1fr 1fr; } }
+
+/* ========================================================
+   Style reference panel
+   ======================================================== */
+.swatches { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: var(--s-3); margin-bottom: var(--s-5); }
+.swatch {
+    border: 1px solid var(--border);
+    border-radius: var(--r-md);
+    overflow: hidden;
+    background: var(--surface);
+}
+.swatch .chip {
+    height: 52px;
+    border-bottom: 1px solid var(--border);
+    margin: 0; border-radius: 0;
+    display: block;
+}
+.swatch .meta { padding: 8px 12px; font-size: 12px; }
+.swatch .meta b { display: block; font-weight: 600; }
+.swatch .meta code { color: var(--text-muted); font-size: 11px; }
+
+</style>
+</head>
+<body>
+<div class="mockup-shell">
+
+<!-- Top-nav: page switcher -->
+<div class="mockup-nav">
+    <div class="mockup-nav-inner">
+        <div class="mockup-brand">Leuven TW<span class="dot">.</span> Events — <span style="color: var(--text-muted); font-weight: 400;">Redesign Mockup</span></div>
+        <div class="mockup-tabs">
+            <button class="mockup-tab active" data-tab="home">Home</button>
+            <button class="mockup-tab" data-tab="donations">Donations</button>
+            <button class="mockup-tab" data-tab="faq">FAQ</button>
+            <button class="mockup-tab" data-tab="admin">Admin</button>
+            <button class="mockup-tab" data-tab="system">Design System</button>
+        </div>
+        <div class="view-toggle" role="tablist" aria-label="Viewport">
+            <button class="active" data-view="desktop">Desktop</button>
+            <button data-view="mobile">Mobile</button>
+        </div>
+    </div>
+</div>
+
+<!-- =============================================================
+     PAGE 1 — HOME
+============================================================== -->
+<section class="mockup-page active" id="page-home">
+  <div class="phone-frame"><div class="phone-scroll">
+  <div class="container-wide">
+
+    <header class="home-header">
+      <div class="row">
+        <div>
+          <div class="eyebrow">Community</div>
+          <h1 class="display">Lilai</h1>
+          <p class="home-tagline">Plug into the community pulse — discover upcoming meetups and RSVP in seconds.</p>
+        </div>
+        <nav>
+          <a href="#">FAQ</a>
+          <a href="#">How-to's</a>
+          <a href="#">Donate</a>
+        </nav>
+      </div>
+    </header>
+
+    <div class="home-layout">
+      <div>
+        <!-- Mobile-only: compact calendar action row replacing the iframe -->
+        <div class="mobile-cal-actions" aria-label="Calendar actions">
+          <a href="https://calendar.google.com/calendar/u/0/r/eventedit" target="_blank" rel="noopener" class="cal-action-pill accent">
+            <span class="ic">＋</span>Create event
+          </a>
+          <a href="#" class="cal-action-pill">
+            <span class="ic">📆</span>Subscribe
+          </a>
+          <a href="#" class="cal-action-pill">
+            <span class="ic">↗</span>Join group
+          </a>
+        </div>
+
+        <div class="section-header">
+          <div>
+            <h2 class="section-title">Upcoming events</h2>
+            <div class="section-meta">3 events this month</div>
+          </div>
+          <div class="actions">
+            <button class="btn ghost sm">↻ Refresh</button>
+          </div>
+        </div>
+
+        <div class="event-filters">
+          <button class="filter-pill active" data-filter="future">Future</button>
+          <button class="filter-pill" data-filter="all">All</button>
+          <span style="width: 1px; background: var(--border); margin: 0 4px;"></span>
+          <button class="filter-pill active">Main calendar</button>
+          <button class="filter-pill active">Food meetups</button>
+        </div>
+
+        <!-- FUTURE view (default) -->
+        <div class="event-list" data-view="future">
+
+          <article class="event-card">
+            <div class="event-date-block">
+              <div class="month">Apr</div>
+              <div class="day">24</div>
+              <div class="time">19:00</div>
+            </div>
+            <div class="event-body">
+              <h3>Night Market Night — Taiwanese street food</h3>
+              <div class="meta">
+                <span>📍 OPEK, Leuven</span>
+                <span>⏱ 2 hrs</span>
+                <span class="chip accent"><span class="dot"></span> Filling up</span>
+              </div>
+              <p class="event-desc">Join us for a cozy evening recreating Taipei night-market classics — bubble tea, oyster omelette, popcorn chicken. Bring friends.</p>
+            </div>
+            <div class="event-side">
+              <div class="attend-meter">
+                <div class="attend-bar"><span style="width: 78%;"></span></div>
+                <span><span class="num">14</span> / 18</span>
+              </div>
+              <div class="rsvp-controls">
+                <button class="primary" title="RSVP">＋</button>
+                <button title="Cancel">－</button>
+              </div>
+            </div>
+          </article>
+
+          <article class="event-card">
+            <div class="event-date-block">
+              <div class="month">May</div>
+              <div class="day">02</div>
+              <div class="time">14:00</div>
+            </div>
+            <div class="event-body">
+              <h3>Dumpling workshop — hands-on</h3>
+              <div class="meta">
+                <span>📍 Community kitchen</span>
+                <span>⏱ 3 hrs</span>
+                <span class="chip"><span class="dot"></span> Open</span>
+              </div>
+              <p class="event-desc">Fold, pleat, steam. A relaxed afternoon of making jiaozi from scratch — all ingredients provided.</p>
+            </div>
+            <div class="event-side">
+              <div class="attend-meter">
+                <div class="attend-bar"><span style="width: 40%;"></span></div>
+                <span><span class="num">8</span> / 20</span>
+              </div>
+              <div class="rsvp-controls">
+                <button class="primary" title="RSVP">＋</button>
+                <button title="Cancel">－</button>
+              </div>
+            </div>
+          </article>
+
+          <article class="event-card">
+            <div class="event-date-block">
+              <div class="month">May</div>
+              <div class="day">18</div>
+              <div class="time">11:00</div>
+            </div>
+            <div class="event-body">
+              <h3>Sunday hike — Meerdaalwoud loop</h3>
+              <div class="meta">
+                <span>📍 Meerdaalwoud trailhead</span>
+                <span>⏱ 4 hrs</span>
+              </div>
+              <p class="event-desc">An easy forest loop, about 9 km. Pack water and snacks — we'll finish with coffee somewhere warm.</p>
+            </div>
+            <div class="event-side">
+              <div class="attend-meter">
+                <div class="attend-bar"><span style="width: 20%;"></span></div>
+                <span><span class="num">5</span></span>
+              </div>
+              <div class="rsvp-controls">
+                <button class="primary" title="RSVP">＋</button>
+                <button title="Cancel" disabled>－</button>
+              </div>
+            </div>
+          </article>
+
+        </div>
+
+        <!-- ALL view (timeline, oldest → newest, scroll-anchored to today) -->
+        <div class="event-list" data-view="all" style="display: none;">
+
+          <button class="load-older" data-action="load-older">
+            <span>↑</span>
+            <span>Load earlier events</span>
+          </button>
+
+          <article class="event-card past">
+            <div class="event-date-block">
+              <div class="month">Mar</div>
+              <div class="day">28</div>
+              <div class="time">11:00</div>
+            </div>
+            <div class="event-body">
+              <h3>Cherry blossom walk — Park Heverlee</h3>
+              <div class="meta">
+                <span>📍 Park Heverlee</span>
+                <span>⏱ 2 hrs</span>
+                <span class="chip"><span class="dot" style="background: var(--text-muted);"></span> Ended</span>
+              </div>
+              <p class="event-desc">A gentle spring stroll to catch peak bloom. Hot tea provided after.</p>
+            </div>
+            <div class="event-side">
+              <div class="attend-meter">
+                <span><span class="num">12</span> attended</span>
+              </div>
+            </div>
+          </article>
+
+          <article class="event-card past">
+            <div class="event-date-block">
+              <div class="month">Apr</div>
+              <div class="day">05</div>
+              <div class="time">19:30</div>
+            </div>
+            <div class="event-body">
+              <h3>Language exchange night</h3>
+              <div class="meta">
+                <span>📍 De Blauwe Kater</span>
+                <span>⏱ 2 hrs</span>
+                <span class="chip"><span class="dot" style="background: var(--text-muted);"></span> Ended</span>
+              </div>
+              <p class="event-desc">Taiwanese ↔ Dutch practice over drinks. All levels welcome.</p>
+            </div>
+            <div class="event-side">
+              <div class="attend-meter">
+                <span><span class="num">9</span> attended</span>
+              </div>
+            </div>
+          </article>
+
+          <!-- Anchor: page initially scrolls here -->
+          <div class="today-divider" id="today-anchor">
+            <span class="today-label">Today · Sat, Apr 18</span>
+          </div>
+
+          <article class="event-card">
+            <div class="event-date-block">
+              <div class="month">Apr</div>
+              <div class="day">24</div>
+              <div class="time">19:00</div>
+            </div>
+            <div class="event-body">
+              <h3>Night Market Night — Taiwanese street food</h3>
+              <div class="meta">
+                <span>📍 OPEK, Leuven</span>
+                <span>⏱ 2 hrs</span>
+                <span class="chip accent"><span class="dot"></span> Filling up</span>
+              </div>
+              <p class="event-desc">Join us for a cozy evening recreating Taipei night-market classics — bubble tea, oyster omelette, popcorn chicken.</p>
+            </div>
+            <div class="event-side">
+              <div class="attend-meter">
+                <div class="attend-bar"><span style="width: 78%;"></span></div>
+                <span><span class="num">14</span> / 18</span>
+              </div>
+              <div class="rsvp-controls">
+                <button class="primary" title="RSVP">＋</button>
+                <button title="Cancel">－</button>
+              </div>
+            </div>
+          </article>
+
+          <article class="event-card">
+            <div class="event-date-block">
+              <div class="month">May</div>
+              <div class="day">02</div>
+              <div class="time">14:00</div>
+            </div>
+            <div class="event-body">
+              <h3>Dumpling workshop — hands-on</h3>
+              <div class="meta">
+                <span>📍 Community kitchen</span>
+                <span>⏱ 3 hrs</span>
+                <span class="chip"><span class="dot"></span> Open</span>
+              </div>
+              <p class="event-desc">Fold, pleat, steam. A relaxed afternoon of making jiaozi from scratch.</p>
+            </div>
+            <div class="event-side">
+              <div class="attend-meter">
+                <div class="attend-bar"><span style="width: 40%;"></span></div>
+                <span><span class="num">8</span> / 20</span>
+              </div>
+              <div class="rsvp-controls">
+                <button class="primary" title="RSVP">＋</button>
+                <button title="Cancel">－</button>
+              </div>
+            </div>
+          </article>
+
+          <article class="event-card">
+            <div class="event-date-block">
+              <div class="month">May</div>
+              <div class="day">18</div>
+              <div class="time">11:00</div>
+            </div>
+            <div class="event-body">
+              <h3>Sunday hike — Meerdaalwoud loop</h3>
+              <div class="meta">
+                <span>📍 Meerdaalwoud trailhead</span>
+                <span>⏱ 4 hrs</span>
+              </div>
+              <p class="event-desc">An easy forest loop, about 9 km. Pack water and snacks.</p>
+            </div>
+            <div class="event-side">
+              <div class="attend-meter">
+                <div class="attend-bar"><span style="width: 20%;"></span></div>
+                <span><span class="num">5</span></span>
+              </div>
+              <div class="rsvp-controls">
+                <button class="primary" title="RSVP">＋</button>
+                <button title="Cancel" disabled>－</button>
+              </div>
+            </div>
+          </article>
+
+        </div>
+      </div>
+
+      <aside class="sidebar">
+        <div class="calendar-card">
+          <div class="ch">
+            <h3>Calendar</h3>
+            <span class="chip"><span class="dot"></span> April 2026</span>
+          </div>
+          <!-- Desktop: mini month grid (stand-in for Google Calendar iframe MONTH view) -->
+          <div style="padding: var(--s-3) var(--s-4) 0; display: flex; gap: var(--s-2);">
+            <a href="https://calendar.google.com/calendar/u/0/r/eventedit" target="_blank" rel="noopener" class="btn accent sm" style="flex: 1; justify-content: center;">
+              <span aria-hidden="true">＋</span> Create event
+            </a>
+            <a href="#" class="btn ghost sm" title="Subscribe to calendar"><span aria-hidden="true">📆</span></a>
+            <a href="#" class="btn ghost sm" title="Join group"><span aria-hidden="true">↗</span></a>
+          </div>
+          <div class="calendar-preview">
+            <div class="cal-month-head">
+              <div class="mlabel">April 2026</div>
+              <div class="arrows">
+                <button aria-label="Previous">‹</button>
+                <button aria-label="Next">›</button>
+              </div>
+            </div>
+            <div class="cal-dow">
+              <span>Mo</span><span>Tu</span><span>We</span><span>Th</span><span>Fr</span><span>Sa</span><span>Su</span>
+            </div>
+            <div class="cal-grid">
+              <div class="cal-cell out">30</div>
+              <div class="cal-cell out">31</div>
+              <div class="cal-cell">1</div>
+              <div class="cal-cell">2</div>
+              <div class="cal-cell">3</div>
+              <div class="cal-cell">4</div>
+              <div class="cal-cell">5</div>
+              <div class="cal-cell">6</div>
+              <div class="cal-cell">7</div>
+              <div class="cal-cell">8</div>
+              <div class="cal-cell">9</div>
+              <div class="cal-cell">10</div>
+              <div class="cal-cell">11<span class="ev">KUL mixer</span></div>
+              <div class="cal-cell">12</div>
+              <div class="cal-cell">13</div>
+              <div class="cal-cell">14</div>
+              <div class="cal-cell">15</div>
+              <div class="cal-cell">16</div>
+              <div class="cal-cell">17</div>
+              <div class="cal-cell today">18<span class="ev">Today</span></div>
+              <div class="cal-cell">19</div>
+              <div class="cal-cell">20</div>
+              <div class="cal-cell">21</div>
+              <div class="cal-cell">22</div>
+              <div class="cal-cell">23</div>
+              <div class="cal-cell">24<span class="ev">Night Mkt</span></div>
+              <div class="cal-cell">25</div>
+              <div class="cal-cell">26</div>
+              <div class="cal-cell">27</div>
+              <div class="cal-cell">28</div>
+              <div class="cal-cell">29</div>
+              <div class="cal-cell">30</div>
+              <div class="cal-cell out">1</div>
+              <div class="cal-cell out">2<span class="ev">Dumplings</span></div>
+            </div>
+            <div style="font-size: 11px; color: var(--text-muted); text-align: center; margin-top: var(--s-3); padding-top: var(--s-2); border-top: 1px solid var(--border);">
+              Preview — live view embeds the real Google Calendar
+            </div>
+          </div>
+
+          <!-- Mobile: agenda list (stand-in for Google Calendar iframe AGENDA view) -->
+          <div class="cal-agenda">
+            <div class="cal-agenda-day">
+              <div class="d-block"><span class="dow">Sat</span><span class="dnum">11</span></div>
+              <div class="d-ev">
+                <div class="t">18:30 — 21:00</div>
+                <div class="n"><span class="dot"></span>KUL mixer</div>
+              </div>
+            </div>
+            <div class="cal-agenda-day">
+              <div class="d-block"><span class="dow">Fri</span><span class="dnum">24</span></div>
+              <div class="d-ev">
+                <div class="t">19:00 — 21:00</div>
+                <div class="n"><span class="dot"></span>Night Market Night</div>
+              </div>
+            </div>
+            <div class="cal-agenda-day">
+              <div class="d-block"><span class="dow">Sat</span><span class="dnum">02</span></div>
+              <div class="d-ev">
+                <div class="t">14:00 — 17:00</div>
+                <div class="n"><span class="dot"></span>Dumpling workshop</div>
+              </div>
+            </div>
+            <div class="cal-agenda-day">
+              <div class="d-block"><span class="dow">Sun</span><span class="dnum">18</span></div>
+              <div class="d-ev">
+                <div class="t">11:00 — 15:00</div>
+                <div class="n"><span class="dot"></span>Meerdaalwoud hike</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card" style="padding: var(--s-5);">
+          <div class="eyebrow">Support</div>
+          <h3 style="font-family: var(--font-display); font-weight: 500; font-size: 20px; margin: 8px 0 10px; letter-spacing: -0.01em;">Keep this running</h3>
+          <p style="color: var(--text-secondary); font-size: 14px; margin: 0 0 var(--s-4);">Hosting this app costs money. Donations go directly to operating expenses.</p>
+          <div style="display: flex; gap: 8px;">
+            <button class="btn accent sm">Donate</button>
+            <button class="btn ghost sm">Report Issue</button>
+          </div>
+        </div>
+      </aside>
+    </div>
+
+    <div class="bottom-support-bar">
+      <p>Built by Fisher Kuan — a small labour of love for Leuven's Taiwanese community.</p>
+      <div class="cta-row">
+        <a class="btn ghost sm" href="#">FAQ</a>
+        <a class="btn ghost sm" href="#">How-to's</a>
+      </div>
+    </div>
+
+  </div>
+  </div></div><!-- /phone-scroll /phone-frame -->
+</section>
+
+<!-- =============================================================
+     PAGE 2 — DONATIONS
+============================================================== -->
+<section class="mockup-page" id="page-donations">
+  <div class="phone-frame"><div class="phone-scroll">
+  <div class="container-narrow">
+
+    <a class="faq-back" href="#">← Back to events</a>
+
+    <div class="donations-hero">
+      <div class="eyebrow">Balance</div>
+      <div class="balance-amount positive">€142.50</div>
+
+      <div class="progress-wrap">
+        <div class="progress-track"><span style="width: 68%;"></span></div>
+        <div class="progress-meta">
+          <span>€142.50 raised</span>
+          <span>Goal · €210</span>
+        </div>
+      </div>
+
+      <div class="donation-cta-row">
+        <button class="btn accent">Donate with Stripe</button>
+        <button class="btn ghost">Back to events</button>
+      </div>
+      <p style="color: var(--text-muted); font-size: 13px; max-width: 440px; margin: var(--s-3) auto 0;">
+        Hosting this web app costs money — your support keeps it running. All donations go directly to operating expenses.
+      </p>
+    </div>
+
+    <hr class="divider" />
+
+    <div class="section-header">
+      <div>
+        <h2 class="section-title">Transactions</h2>
+        <div class="section-meta">Most recent entries</div>
+      </div>
+      <button class="btn ghost sm">↻ Refresh</button>
+    </div>
+
+    <div class="donations-list">
+      <div class="donation-entry">
+        <div class="date">Apr 14, 2026</div>
+        <div>
+          <div class="donator">Ling W.</div>
+          <div class="desc">Monthly support</div>
+        </div>
+        <div class="donation-amount positive">+€25.00</div>
+      </div>
+      <div class="donation-entry">
+        <div class="date">Apr 10, 2026</div>
+        <div>
+          <div class="donator">Anonymous</div>
+          <div class="desc">One-time donation</div>
+        </div>
+        <div class="donation-amount positive">+€10.00</div>
+      </div>
+      <div class="donation-entry">
+        <div class="date">Apr 01, 2026</div>
+        <div>
+          <div class="donator">Hosting</div>
+          <div class="desc">Heroku — monthly dyno + postgres</div>
+        </div>
+        <div class="donation-amount negative">−€18.00</div>
+      </div>
+      <div class="donation-entry">
+        <div class="date">Mar 28, 2026</div>
+        <div>
+          <div class="donator">Chen M.</div>
+          <div class="desc">Thanks for organizing the hike!</div>
+        </div>
+        <div class="donation-amount positive">+€15.00</div>
+      </div>
+    </div>
+
+  </div>
+  </div></div>
+</section>
+
+<!-- =============================================================
+     PAGE 3 — FAQ
+============================================================== -->
+<section class="mockup-page" id="page-faq">
+  <div class="phone-frame"><div class="phone-scroll">
+  <div class="container-narrow">
+    <a class="faq-back" href="#">← Back to events</a>
+
+    <div class="faq-hero">
+      <div class="eyebrow">Frequently asked</div>
+      <h1 class="display">Questions, answered.</h1>
+      <p style="color: var(--text-secondary); max-width: 560px;">Everything you might wonder about RSVPs, calendars, donations, and how this little app is run.</p>
+    </div>
+
+    <div class="faq-list">
+      <details class="faq-item" open>
+        <summary>How do RSVPs work?</summary>
+        <div class="faq-answer">Click the + button on an event card and enter your name. That's it — you're on the list. The attendance count updates in real time for everyone.</div>
+      </details>
+      <details class="faq-item">
+        <summary>Can I cancel my RSVP?</summary>
+        <div class="faq-answer">Yes. Click the − button on the event card, pick your name from the list, and confirm. If you can't find your name, it may have been entered with a different spelling.</div>
+      </details>
+      <details class="faq-item">
+        <summary>Where do my donations go?</summary>
+        <div class="faq-answer">Hosting fees — Heroku, Postgres, domain, and occasional Stripe fees. Every expense is logged on the donations page so you can see where money goes.</div>
+      </details>
+      <details class="faq-item">
+        <summary>Can I organize my own event?</summary>
+        <div class="faq-answer">Yes! Join the community group (link in the top-right of the calendar), and you can add events directly to the shared Google Calendar. They'll appear here automatically.</div>
+      </details>
+      <details class="faq-item">
+        <summary>Is my data shared with anyone?</summary>
+        <div class="faq-answer">No. Names entered for RSVPs are stored only to track attendance. Payments are handled by Stripe — the app never sees your card data.</div>
+      </details>
+    </div>
+  </div>
+  </div></div>
+</section>
+
+<!-- =============================================================
+     PAGE 4 — ADMIN
+============================================================== -->
+<section class="mockup-page" id="page-admin">
+  <div class="phone-frame"><div class="phone-scroll">
+  <div class="container-narrow">
+
+    <div class="admin-header">
+      <div>
+        <div class="eyebrow">Admin</div>
+        <h1>Event & donation management</h1>
+      </div>
+      <nav class="tabs">
+        <a href="#" class="active">Events</a>
+        <a href="#">Donations</a>
+        <a href="#">Back to site</a>
+      </nav>
+    </div>
+
+    <div class="section-header">
+      <h2 class="section-title">Future events</h2>
+      <div class="section-meta">Set attendance limits</div>
+    </div>
+
+    <div>
+      <div class="admin-row">
+        <div>
+          <h4>Night Market Night — Taiwanese street food</h4>
+          <div class="sub">Fri · Apr 24, 2026 · 19:00 — OPEK, Leuven</div>
+        </div>
+        <div class="admin-controls">
+          <input type="number" class="input" value="18" placeholder="No limit">
+          <button class="btn">Update limit</button>
+          <button class="btn ghost">Remove</button>
+        </div>
+      </div>
+      <div class="admin-row">
+        <div>
+          <h4>Dumpling workshop — hands-on</h4>
+          <div class="sub">Sat · May 2, 2026 · 14:00 — Community kitchen</div>
+        </div>
+        <div class="admin-controls">
+          <input type="number" class="input" value="20" placeholder="No limit">
+          <button class="btn">Update limit</button>
+          <button class="btn ghost">Remove</button>
+        </div>
+      </div>
+      <div class="admin-row">
+        <div>
+          <h4>Sunday hike — Meerdaalwoud loop</h4>
+          <div class="sub">Sun · May 18, 2026 · 11:00 — Meerdaalwoud trailhead</div>
+        </div>
+        <div class="admin-controls">
+          <input type="number" class="input" placeholder="No limit">
+          <button class="btn">Set limit</button>
+          <button class="btn ghost">Remove</button>
+        </div>
+      </div>
+    </div>
+
+    <hr class="divider" />
+
+    <div class="section-header">
+      <h2 class="section-title">Add donation entry</h2>
+      <div class="section-meta">Negative for expenses</div>
+    </div>
+
+    <div class="card" style="padding: var(--s-5);">
+      <div class="form-grid cols-2">
+        <div>
+          <label class="form-label" for="amt">Amount (€)</label>
+          <input class="input" id="amt" type="number" step="0.01" placeholder="25.00">
+          <div class="form-help">Use negative values for expenses (e.g., −50.00)</div>
+        </div>
+        <div>
+          <label class="form-label" for="date">Entry date</label>
+          <input class="input" id="date" type="date">
+          <div class="form-help">Defaults to today if blank</div>
+        </div>
+        <div>
+          <label class="form-label" for="donator">Donator</label>
+          <input class="input" id="donator" type="text" placeholder="Name of donor / payer">
+        </div>
+        <div>
+          <label class="form-label" for="desc">Description</label>
+          <input class="input" id="desc" type="text" placeholder="Brief description">
+        </div>
+      </div>
+      <div style="display: flex; gap: var(--s-2); margin-top: var(--s-5);">
+        <button class="btn accent">Add entry</button>
+        <button class="btn ghost">Reset</button>
+      </div>
+    </div>
+
+  </div>
+  </div></div>
+</section>
+
+<!-- =============================================================
+     PAGE 5 — DESIGN SYSTEM REFERENCE
+============================================================== -->
+<section class="mockup-page" id="page-system">
+  <div class="phone-frame"><div class="phone-scroll">
+  <div class="container-narrow">
+    <div class="eyebrow">Design system</div>
+    <h1 class="display">Tokens & primitives</h1>
+    <p style="color: var(--text-secondary); max-width: 560px;">A quick reference for colors, typography, and UI primitives used across the redesign.</p>
+
+    <hr class="divider">
+
+    <h2 class="section-title" style="margin-bottom: var(--s-3);">Palette</h2>
+    <div class="swatches">
+        <div class="swatch"><div class="chip" style="background: var(--bg); height:52px;"></div><div class="meta"><b>Background</b><code>#fafaf9</code></div></div>
+        <div class="swatch"><div class="chip" style="background: var(--surface); height:52px;"></div><div class="meta"><b>Surface</b><code>#ffffff</code></div></div>
+        <div class="swatch"><div class="chip" style="background: var(--surface-muted); height:52px;"></div><div class="meta"><b>Surface muted</b><code>#f5f5f4</code></div></div>
+        <div class="swatch"><div class="chip" style="background: var(--text); height:52px;"></div><div class="meta"><b>Text</b><code>#1c1917</code></div></div>
+        <div class="swatch"><div class="chip" style="background: var(--text-secondary); height:52px;"></div><div class="meta"><b>Secondary</b><code>#57534e</code></div></div>
+        <div class="swatch"><div class="chip" style="background: var(--text-muted); height:52px;"></div><div class="meta"><b>Muted</b><code>#a8a29e</code></div></div>
+        <div class="swatch"><div class="chip" style="background: var(--accent); height:52px;"></div><div class="meta"><b>Accent</b><code>#0f766e</code></div></div>
+        <div class="swatch"><div class="chip" style="background: var(--accent-soft); height:52px;"></div><div class="meta"><b>Accent soft</b><code>#ccfbf1</code></div></div>
+        <div class="swatch"><div class="chip" style="background: var(--success); height:52px;"></div><div class="meta"><b>Success</b><code>#059669</code></div></div>
+        <div class="swatch"><div class="chip" style="background: var(--danger); height:52px;"></div><div class="meta"><b>Danger</b><code>#e11d48</code></div></div>
+    </div>
+
+    <hr class="divider">
+
+    <h2 class="section-title" style="margin-bottom: var(--s-3);">Typography</h2>
+    <div class="card" style="padding: var(--s-5);">
+      <div class="eyebrow">Eyebrow / label</div>
+      <h1 class="display">Fraunces for display</h1>
+      <h2 class="section-title">Fraunces for section titles</h2>
+      <p style="color: var(--text); margin-top: var(--s-3);">Inter is the body face. Nothing shouts — tracking is tight on display, comfortable on body. Weights: 400 body, 500 display & UI controls, 600 strong.</p>
+      <p style="color: var(--text-secondary);">Secondary prose uses <code>--text-secondary</code> and sits at 14–15px. Timestamps and meta lines drop to 12–13px with <code>--text-muted</code>.</p>
+    </div>
+
+    <hr class="divider">
+
+    <h2 class="section-title" style="margin-bottom: var(--s-3);">Buttons</h2>
+    <div style="display: flex; flex-wrap: wrap; gap: var(--s-2); margin-bottom: var(--s-3);">
+      <button class="btn">Primary</button>
+      <button class="btn accent">Accent</button>
+      <button class="btn ghost">Ghost</button>
+      <button class="btn subtle">Subtle</button>
+      <button class="btn sm">Small</button>
+      <button class="btn icon">＋</button>
+    </div>
+
+    <h2 class="section-title" style="margin-bottom: var(--s-3); margin-top: var(--s-5);">Chips</h2>
+    <div style="display: flex; gap: var(--s-2); margin-bottom: var(--s-3);">
+      <span class="chip"><span class="dot"></span> Open</span>
+      <span class="chip accent"><span class="dot"></span> Filling up</span>
+      <span class="chip"><span class="dot" style="background: var(--danger);"></span> Full</span>
+    </div>
+
+    <h2 class="section-title" style="margin-bottom: var(--s-3); margin-top: var(--s-5);">Form inputs</h2>
+    <div class="card" style="padding: var(--s-5); max-width: 440px;">
+      <label class="form-label">Your name</label>
+      <input class="input" placeholder="Enter your name">
+      <div class="form-help">This is what attendees will see.</div>
+    </div>
+
+  </div>
+  </div></div>
+</section>
+
+</div>
+
+<script>
+  document.querySelectorAll('.mockup-tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+      const target = tab.dataset.tab;
+      document.querySelectorAll('.mockup-tab').forEach(t => t.classList.toggle('active', t === tab));
+      document.querySelectorAll('.mockup-page').forEach(p => p.classList.toggle('active', p.id === 'page-' + target));
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
+  });
+  document.querySelectorAll('.view-toggle button').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const v = btn.dataset.view;
+      document.querySelectorAll('.view-toggle button').forEach(b => b.classList.toggle('active', b === btn));
+      document.body.classList.toggle('view-mobile', v === 'mobile');
+    });
+  });
+
+  // Future / All toggle on the Home page
+  document.querySelectorAll('.filter-pill[data-filter]').forEach(pill => {
+    pill.addEventListener('click', () => {
+      const filter = pill.dataset.filter;
+      document.querySelectorAll('.filter-pill[data-filter]').forEach(p =>
+        p.classList.toggle('active', p === pill)
+      );
+      document.querySelectorAll('.event-list[data-view]').forEach(list => {
+        list.style.display = list.dataset.view === filter ? '' : 'none';
+      });
+      // When switching to All, scroll so the "Today" divider lands near top of list
+      if (filter === 'all') {
+        const anchor = document.getElementById('today-anchor');
+        if (anchor) anchor.scrollIntoView({ block: 'start', behavior: 'smooth' });
+      }
+    });
+  });
+
+  // "Load earlier events" — mockup demo: loads a batch of ~10 older cards
+  // (real app: fetch `/api/events?before=<oldest>&limit=10` or a 2-week window)
+  const olderBatches = [
+    [
+      { m: 'Mar', d: '15', t: '14:00', title: "Taiwanese film screening — Millennium Mambo", loc: 'Cinema Zed', dur: '2.5 hrs', desc: "Hou Hsiao-Hsien's neon-lit classic, with tea and discussion after.", a: 16 },
+      { m: 'Mar', d: '09', t: '12:00', title: "Brunch & board games", loc: 'Café Den Bunker', dur: '3 hrs', desc: "Catan, Carcassonne and a long coffee. New faces welcome.", a: 11 },
+      { m: 'Mar', d: '02', t: '18:00', title: "Lantern festival potluck", loc: 'Community kitchen', dur: '3 hrs', desc: "Bring a dish; we'll provide tangyuan and tea.", a: 22 },
+      { m: 'Feb', d: '24', t: '19:30', title: "Mahjong night", loc: "Kristoffel's place", dur: '3 hrs', desc: "Beginners welcome — we'll teach the basics.", a: 8 },
+      { m: 'Feb', d: '17', t: '11:00', title: "Winter hike — Kesselberg", loc: 'Kesselberg trailhead', dur: '3 hrs', desc: "Short, steady climb with a view over Leuven.", a: 14 },
+      { m: 'Feb', d: '10', t: '19:00', title: "Chinese New Year dinner", loc: 'Restaurant Lin', dur: '3 hrs', desc: "Pre-set banquet menu. Bookings closed Feb 5.", a: 31 },
+      { m: 'Feb', d: '03', t: '18:00', title: "Hot pot gathering", loc: 'Community kitchen', dur: '3 hrs', desc: "Shared broths, bring an ingredient to add.", a: 18 },
+      { m: 'Jan', d: '27', t: '15:00', title: "Tea ceremony intro", loc: 'Parkstraat 12', dur: '2 hrs', desc: "A slow afternoon of oolong and gongfu brewing.", a: 9 },
+      { m: 'Jan', d: '20', t: '19:00', title: "Book club — Wu Ming-Yi", loc: 'De Bib Leuven', dur: '2 hrs', desc: "Discussing The Man with the Compound Eyes.", a: 7 },
+      { m: 'Jan', d: '13', t: '12:30', title: "Xiaolongbao making", loc: 'Community kitchen', dur: '3 hrs', desc: "Hands-on soup dumpling session — all materials provided.", a: 15 }
+    ]
+  ];
+
+  document.addEventListener('click', (e) => {
+    const btn = e.target.closest('.load-older');
+    if (!btn) return;
+    if (btn.classList.contains('loading')) return;
+
+    // Preserve scroll position when prepending (so the viewport doesn't jump)
+    const scroller = document.querySelector(
+      document.body.classList.contains('view-mobile') ? '.phone-scroll' : 'html'
+    );
+    const prevScrollHeight = scroller.scrollHeight;
+    const prevScrollTop = (scroller === document.documentElement)
+      ? window.scrollY : scroller.scrollTop;
+
+    btn.classList.add('loading');
+    btn.innerHTML = '<span class="spinner"></span><span>Loading earlier events…</span>';
+
+    setTimeout(() => {
+      const batch = olderBatches.shift();
+      if (batch) {
+        const frag = document.createDocumentFragment();
+        batch.forEach(ev => {
+          const card = document.createElement('article');
+          card.className = 'event-card past';
+          card.innerHTML = `
+            <div class="event-date-block">
+              <div class="month">${ev.m}</div><div class="day">${ev.d}</div><div class="time">${ev.t}</div>
+            </div>
+            <div class="event-body">
+              <h3>${ev.title}</h3>
+              <div class="meta">
+                <span>📍 ${ev.loc}</span>
+                <span>⏱ ${ev.dur}</span>
+                <span class="chip"><span class="dot" style="background: var(--text-muted);"></span> Ended</span>
+              </div>
+              <p class="event-desc">${ev.desc}</p>
+            </div>
+            <div class="event-side">
+              <div class="attend-meter"><span><span class="num">${ev.a}</span> attended</span></div>
+            </div>`;
+          frag.appendChild(card);
+        });
+        btn.after(frag);
+      }
+
+      btn.classList.remove('loading');
+      if (olderBatches.length === 0) {
+        btn.innerHTML = '<span>That\'s everything</span>';
+        btn.disabled = true;
+        btn.style.cursor = 'default';
+      } else {
+        btn.innerHTML = '<span>↑</span><span>Load earlier events</span>';
+      }
+
+      // Maintain scroll position relative to newly inserted content
+      const delta = scroller.scrollHeight - prevScrollHeight;
+      if (scroller === document.documentElement) {
+        window.scrollTo(0, prevScrollTop + delta);
+      } else {
+        scroller.scrollTop = prevScrollTop + delta;
+      }
+    }, 700);
+  });
+</script>
+</body>
+</html>

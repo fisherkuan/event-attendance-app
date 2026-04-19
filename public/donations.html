@@ -3,67 +3,63 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Donations - Leuven Taiwanese Events</title>
-    <meta name="description" content="View donation balance and recent entries for the Leuven Taiwanese Events app.">
+    <title>Donations — Lilai</title>
+    <meta name="description" content="View donation balance and recent entries for the Lilai app.">
     <link rel="stylesheet" href="/styles.css">
-    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans:wght@300;400;600;700&family=Press+Start+2P&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Fraunces:opsz,wght@9..144,500;9..144,600&display=swap" rel="stylesheet">
     <link rel="icon" href="/icons/favicon.ico" type="image/x-icon">
     <script src="https://js.stripe.com/v3/"></script>
 </head>
 <body>
-<div class="container">
-    <div class="scroll-snap-container">
-        <!-- Page 1: Balance and Support -->
-        <section class="donations-balance-section">
-            <div class="banner-content">
-                <h1 class="balance-title" id="balance-title" style="height: 0.5rem;">Balance</h1>
-                <h1 class="balance-amount" id="balance-amount" style="font-size: 5rem; font-weight: 500; margin-bottom: 2rem;">
-                    €0.00
-                </h1>
-                <div class="support-buttons">
-                    <button id="donate-btn" class="support-btn">
-                        <img src="/icons/one-time-donation.png" alt="Donate" class="btn-icon">
-                        Donate
-                    </button>
-                    <a href="/" class="support-btn mobile-only">Back to Home</a>
-                </div>
-                <div class="support-header">
-                    <p class="support-line" data-index="0">Hosting this web app costs money—your support keeps it running.</p>
-                    <p class="support-line" data-index="1">All donations go directly to operating expenses.</p>
-                </div>
-                <p class="copyright mobile-only">&copy; Built by Fisher Kuan</p>
+<div class="container container-narrow">
+    <a class="faq-back" href="/">← Back to events</a>
+
+    <section class="donations-hero">
+        <div class="eyebrow">Balance</div>
+        <span id="balance-amount" class="balance-amount">€0.00</span>
+
+        <div class="balance-bar-wrap" id="donation-progress-wrap">
+            <div class="balance-bar-track">
+                <span class="balance-bar-zero" aria-hidden="true"></span>
+                <span id="donation-progress-fill" class="balance-bar-fill"></span>
             </div>
-        </section>
-
-        <!-- Page 2: Entries -->
-        <main>
-            <section class="donations-entries-section">
-                <h2><span class="section-emoji" aria-hidden="true">📋</span> Entries <span id="refresh-donations-btn" class="refresh-btn" title="Refresh entries"></span></h2>
-                <div id="donations-list" class="donations-list">
-                    <div class="loading">Loading entries...</div>
-                </div>
-            </section>
-        </main>
-    </div>
-
-    <!-- Page indicators -->
-    <div class="page-indicators">
-        <span class="page-dot active" data-page="0"></span>
-        <span class="page-dot" data-page="1"></span>
-    </div>
-
-    <!-- Bottom banner for desktop -->
-    <div class="bottom-banner donations-bottom-banner">
-        <div class="container">
-            <div class="support-buttons">
-                <a href="/" class="support-btn">Back to Home</a>
+            <div class="balance-bar-meta">
+                <span id="balance-bar-min"></span>
+                <span>€0</span>
+                <span id="balance-bar-max"></span>
             </div>
+        </div>
+
+        <div class="donation-cta-row">
+            <button type="button" id="donate-btn" class="btn accent">Donate with Stripe</button>
+        </div>
+        <p style="color: var(--text-muted); font-size: 13px; max-width: 440px; margin: var(--s-3) auto 0;">
+            Hosting this web app costs money — your support keeps it running. All donations go directly to operating expenses.
+        </p>
+    </section>
+
+    <hr class="divider" />
+
+    <section class="donations-section">
+        <div class="section-header">
+            <div>
+                <h2 class="section-title">Transactions</h2>
+                <div class="section-meta">Most recent entries</div>
+            </div>
+            <button type="button" id="refresh-donations-btn" class="btn ghost sm" title="Refresh entries">↻ Refresh</button>
+        </div>
+        <div id="donations-list" class="donations-list">
+            <div class="loading">Loading entries...</div>
+        </div>
+    </section>
+
+    <footer class="bottom-banner">
+        <div class="banner-content">
             <p class="copyright">&copy; Built by Fisher Kuan</p>
         </div>
-    </div>
+    </footer>
 </div>
 
 <script src="/js/donation.js"></script>
 </body>
 </html>
-

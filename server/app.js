@@ -536,39 +536,73 @@ app.get('/api/events', async (req, res) => {
             await client.query('COMMIT');
         }
 
-        let timeRangeFilter = '';
-        const now = new Date();
-        switch (timeRange) {
-            case 'future':
-                timeRangeFilter = 'WHERE date > NOW()';
-                break;
-            case 'past':
-                timeRangeFilter = 'WHERE date < NOW()';
-                break;
-            case 'all':
-            default:
-                timeRangeFilter = '';
-                break;
+        // Paginated past-events mode: ?before=<ISO>&limit=N
+        // Returns events strictly before the cursor, newest-first, capped by limit.
+        const beforeParam = req.query.before;
+        let beforeCursor = null;
+        if (beforeParam) {
+            const d = new Date(beforeParam);
+            if (!isNaN(d.getTime())) {
+                beforeCursor = d;
+            }
+        }
+
+        const parsedLimit = parseInt(req.query.limit, 10);
+        const limit = (Number.isFinite(parsedLimit) && parsedLimit > 0)
+            ? Math.min(parsedLimit, 100)
+            : null;
+
+        let whereClause = '';
+        let orderClause = 'ORDER BY e.date';
+        let limitClause = '';
+        const params = [];
+
+        if (beforeCursor) {
+            params.push(beforeCursor.toISOString());
+            whereClause = `WHERE e.date < $${params.length}`;
+            orderClause = 'ORDER BY e.date DESC';
+            if (limit) {
+                params.push(limit);
+                limitClause = `LIMIT $${params.length}`;
+            }
+        } else {
+            switch (timeRange) {
+                case 'future':
+                    whereClause = 'WHERE e.date > NOW()';
+                    break;
+                case 'past':
+                    whereClause = 'WHERE e.date < NOW()';
+                    break;
+                case 'all':
+                default:
+                    whereClause = '';
+                    break;
+            }
+            if (limit) {
+                params.push(limit);
+                limitClause = `LIMIT $${params.length}`;
+            }
         }
 
         const eventsResult = await client.query(`
-            SELECT 
-                e.*, 
+            SELECT
+                e.*,
                 COALESCE(r.attendingCount, 0) as "attendingCount",
                 r.attendees
             FROM events e
             LEFT JOIN (
-                SELECT 
-                    event_id, 
+                SELECT
+                    event_id,
                     COUNT(*) as attendingCount,
                     array_agg(attendee_name) as attendees
-                FROM rsvps 
-                WHERE attendance = 'yes' 
+                FROM rsvps
+                WHERE attendance = 'yes'
                 GROUP BY event_id
             ) r ON e.id = r.event_id
-            ${timeRangeFilter} 
-            ORDER BY e.date
-        `);
+            ${whereClause}
+            ${orderClause}
+            ${limitClause}
+        `, params);
 
         const eventsWithAttendance = eventsResult.rows.map(event => ({
             ...event,
