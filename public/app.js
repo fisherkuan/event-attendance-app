@@ -581,6 +581,7 @@ function renderEventCard(event, { isPast, isToday }) {
     const eventDate = new Date(event.date);
     const dayNum = String(eventDate.getDate()).padStart(2, '0');
     const monthAbbr = eventDate.toLocaleDateString('en-US', { month: 'short' });
+    const weekdayAbbr = eventDate.toLocaleDateString('en-US', { weekday: 'short' });
     const timeStr = eventDate.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit', hour12: false });
 
     const sanitizedEventId = escapeAttribute(event.id);
@@ -658,6 +659,7 @@ function renderEventCard(event, { isPast, isToday }) {
             <div class="event-date-block">
                 <div class="month">${escapeHtml(monthAbbr)}</div>
                 <div class="day">${dayNum}</div>
+                <div class="weekday">${escapeHtml(weekdayAbbr)}</div>
                 <div class="time">${escapeHtml(timeStr)}</div>
             </div>
             <div class="event-body">

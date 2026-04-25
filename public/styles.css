@@ -660,16 +660,25 @@ body.menu-open { overflow: hidden; }
     margin-top: 2px;
     color: var(--text);
 }
+.event-date-block .weekday {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    margin-top: 4px;
+}
 .event-date-block .time {
     font-size: 11px;
     color: var(--text-muted);
-    margin-top: 4px;
+    margin-top: 2px;
 }
 .event-card.today .event-date-block {
     background: var(--text);
 }
 .event-card.today .event-date-block .month,
 .event-card.today .event-date-block .day,
+.event-card.today .event-date-block .weekday,
 .event-card.today .event-date-block .time { color: #fff; }
 
 .event-body { min-width: 0; }

@@ -885,6 +885,10 @@ app.get('/api/health', (req, res) => {
 });
 
 app.get('/admin', (req, res) => {
+    res.redirect(301, '/admin/events');
+});
+
+app.get('/admin/events', (req, res) => {
     res.sendFile(path.join(__dirname, '../public/admin.html'));
 });
 
@@ -892,8 +896,12 @@ app.get('/admin/donations', (req, res) => {
     res.sendFile(path.join(__dirname, '../public/admin-donations.html'));
 });
 
-app.get('/donations', (req, res) => {
+app.get('/donate', (req, res) => {
     res.sendFile(path.join(__dirname, '../public/donations.html'));
+});
+
+app.get('/donations', (req, res) => {
+    res.redirect(301, '/donate');
 });
 
 // Serve the main application for all other routes
